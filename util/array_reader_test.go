@@ -21,7 +21,7 @@ const data_point = `
 2:1,4:3,6:5
 `
 
-type Point struct {
+type _point struct {
 	X, Y int
 }
 
@@ -29,7 +29,7 @@ func ArrayEquals[T comparable](a1, a2 [][]T) bool {
 	return slices.EqualFunc(a1, a2, func(s1, s2 []T) bool { return slices.Equal(s1, s2) })
 }
 
-func ParsePoint(s string) (p Point, err error) {
+func ParsePoint(s string) (p _point, err error) {
 	xy := strings.SplitN(s, ":", 2)
 	if len(xy) != 2 {
 		err = fmt.Errorf("Invalid Point: %s", s)
@@ -101,7 +101,7 @@ func TestArrayReaderPoint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := [][]Point{{Point{1, 2}, Point{3, 4}, Point{5, 6}}, {Point{2, 1}, Point{4, 3}, Point{6, 5}}}
+	expected := [][]_point{{_point{1, 2}, _point{3, 4}, _point{5, 6}}, {_point{2, 1}, _point{4, 3}, _point{6, 5}}}
 	if !ArrayEquals(out, expected) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
 	}
