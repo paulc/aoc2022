@@ -20,20 +20,31 @@ func ArrayReaderFunc[T any](r io.Reader, f func(s string) ([]T, error)) (out [][
 	return
 }
 
+func LineParser[T any](line string, splitF func(string) ([]string, error), parseF func(string) (T, error)) (out []T, err error) {
+	if len(line) > 0 {
+		var split []string
+		split, err = splitF(line)
+		if err != nil {
+			return
+		}
+		for _, v := range split {
+			var p T
+			p, err = parseF(v)
+			if err != nil {
+				return
+			}
+			out = append(out, p)
+		}
+	}
+	return
+}
+
 func ArrayReader[T any](r io.Reader, splitF func(string) ([]string, error), parseF func(string) (T, error)) (out [][]T, err error) {
 	_, err = LineReader(r, func(s string) error {
-		line := []T{}
 		if len(s) > 0 {
-			split, err := splitF(s)
+			line, err := LineParser(s, splitF, parseF)
 			if err != nil {
 				return err
-			}
-			for _, v := range split {
-				p, err := parseF(v)
-				if err != nil {
-					return err
-				}
-				line = append(line, p)
 			}
 			out = append(out, line)
 		}

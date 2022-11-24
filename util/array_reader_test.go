@@ -43,14 +43,29 @@ func ParsePoint(s string) (p Point, err error) {
 	return
 }
 
-func TestArrayReader(t *testing.T) {
+func TestLineParser(t *testing.T) {
+	out, err := LineParser("1 2 3", SplitWS, strconv.Atoi)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(out, []int{1, 2, 3}) {
+		t.Fatal(err)
+	}
+}
 
+func TestLineParserErr(t *testing.T) {
+	_, err := LineParser("1 xx 3", SplitWS, strconv.Atoi)
+	if err == nil {
+		t.Fatal("Expected parse error")
+	}
+}
+
+func TestArrayReader(t *testing.T) {
 	r := bytes.NewBufferString(data)
 	out, err := ArrayReader(r, SplitWS, strconv.Atoi)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	expected := [][]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
 	if !ArrayEquals(out, expected) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
@@ -58,7 +73,6 @@ func TestArrayReader(t *testing.T) {
 }
 
 func TestArrayReaderFunc(t *testing.T) {
-
 	r := bytes.NewBufferString(data)
 	out, err := ArrayReaderFunc(r, func(s string) (out []int, err error) {
 		strings.Split(s, " ")
@@ -75,7 +89,6 @@ func TestArrayReaderFunc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	expected := [][]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
 	if !ArrayEquals(out, expected) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
@@ -83,7 +96,6 @@ func TestArrayReaderFunc(t *testing.T) {
 }
 
 func TestArrayReaderPoint(t *testing.T) {
-
 	r := bytes.NewBufferString(data_point)
 	out, err := ArrayReader(r, MakeStringSplitter(","), ParsePoint)
 	if err != nil {
@@ -92,5 +104,13 @@ func TestArrayReaderPoint(t *testing.T) {
 	expected := [][]Point{{Point{1, 2}, Point{3, 4}, Point{5, 6}}, {Point{2, 1}, Point{4, 3}, Point{6, 5}}}
 	if !ArrayEquals(out, expected) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
+	}
+}
+
+func TestArrayReaderPointErr(t *testing.T) {
+	r := bytes.NewBufferString("1:2,xx,3:4")
+	_, err := ArrayReader(r, MakeStringSplitter(","), ParsePoint)
+	if err == nil {
+		t.Fatal("Expected parse error")
 	}
 }
