@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -19,16 +20,15 @@ type Grid[T any] struct {
 	Data           []T
 }
 
-func NewGrid[T any](x0, y0, x1, y1 int) *Grid[T] {
-	g := &Grid[T]{}
-	g.X0 = x0
-	g.Y0 = y0
-	g.X1 = x1
-	g.Y1 = y1
-	g.Width = x1 - x0
-	g.Height = y1 - y0
+func NewGrid[T any](x0, y0, x1, y1 int) (*Grid[T], error) {
+	if x1 <= x0 || y1 <= y0 {
+		return nil, errors.New("Invalid bounds")
+	}
+	g := &Grid[T]{X0: x0, Y0: y0, X1: x1, Y1: y1}
+	g.Width = x1 - x0 + 1
+	g.Height = y1 - y0 + 1
 	g.Data = make([]T, g.Width*g.Height)
-	return g
+	return g, nil
 }
 
 func (g *Grid[T]) CheckBounds(p Point) bool {
@@ -71,4 +71,28 @@ func (g *Grid[T]) Adjacent(p Point) (out []Point) {
 		}
 	}
 	return
+}
+
+func (g *Grid[T]) AdjacentWrap(p Point) (out []Point) {
+	for _, v := range []struct{ dx, dy int }{{-1, 0}, {0, -1}, {1, 0}, {0, 1}} {
+		out = append(out, g.Move(p, v.dx, v.dy))
+	}
+	return
+}
+
+func (g *Grid[T]) Move(p Point, dx, dy int) Point {
+	p1 := p.Move(dx, dy)
+	if !g.CheckBounds(p1) {
+		if p1.X > g.X1 {
+			p1.X = g.X0 + (p1.X - g.X1 - 1)
+		} else if p1.X < g.X0 {
+			p1.X = g.X1 - (g.X0 - p1.X - 1)
+		}
+		if p1.Y > g.Y1 {
+			p1.Y = g.Y0 + (p1.Y - g.Y1 - 1)
+		} else if p1.Y < g.Y0 {
+			p1.Y = g.Y1 - (g.Y0 - p1.Y - 1)
+		}
+	}
+	return p1
 }
