@@ -13,6 +13,16 @@ func (d _gridData) String() string {
 	return fmt.Sprintf("%3d", d)
 }
 
+func TestPoint(t *testing.T) {
+	p1 := Point{0, 0}
+	if (p1.Move(5, 5) != Point{5, 5}) {
+		t.Error(p1.Move(5, 5))
+	}
+	if p1.Distance(Point{5, -5}) != 10 {
+		t.Error(p1.Distance(Point{5, -5}))
+	}
+}
+
 func TestGridSetGetPrint(t *testing.T) {
 	for _, v := range []struct{ x0, y0, x1, y1 int }{{0, 0, 5, 5}, {-2, -2, 2, 2}} {
 		g, err := NewGrid[Point](v.x0, v.y0, v.x1, v.y1)
@@ -129,6 +139,32 @@ func TestGridMove(t *testing.T) {
 	}{
 		{Point{0, 0}, -1, -1, Point{5, 5}},
 		{Point{0, 0}, -2, -2, Point{4, 4}},
+		{Point{2, 2}, -4, 1, Point{4, 3}},
+		{Point{5, 5}, 2, -2, Point{1, 3}},
+		{Point{0, 0}, 20, 20, Point{2, 2}},
+	} {
+		if g.Move(v.p, v.dx, v.dy) != v.p2 {
+			t.Error(v, "::", g.Move(v.p, v.dx, v.dy))
+		}
+	}
+}
+
+func TestGridMove2(t *testing.T) {
+	g, err := NewGrid[_gridData](-2, -2, 2, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, v := range []struct {
+		p      Point
+		dx, dy int
+		p2     Point
+	}{
+		{Point{0, 0}, -1, -1, Point{-1, -1}},
+		{Point{0, 0}, 3, 3, Point{-2, -2}},
+		{Point{0, 0}, -3, -3, Point{2, 2}},
+		{Point{0, 0}, 10, 10, Point{0, 0}},
+		{Point{0, 0}, -20, -20, Point{0, 0}},
 	} {
 		if g.Move(v.p, v.dx, v.dy) != v.p2 {
 			t.Error(v, "::", g.Move(v.p, v.dx, v.dy))

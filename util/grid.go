@@ -14,6 +14,18 @@ func (p Point) Move(dx, dy int) Point {
 	return Point{p.X + dx, p.Y + dy}
 }
 
+func absint(i int) int {
+	if i < 0 {
+		return -i
+	} else {
+		return i
+	}
+}
+
+func (p Point) Distance(p2 Point) int {
+	return absint(p.X-p2.X) + absint(p.Y-p2.Y)
+}
+
 type Grid[T any] struct {
 	X0, Y0, X1, Y1 int
 	Width, Height  int
@@ -84,14 +96,14 @@ func (g *Grid[T]) Move(p Point, dx, dy int) Point {
 	p1 := p.Move(dx, dy)
 	if !g.CheckBounds(p1) {
 		if p1.X > g.X1 {
-			p1.X = g.X0 + (p1.X - g.X1 - 1)
+			p1.X = g.X0 + (p1.X-g.X1-1)%g.Width
 		} else if p1.X < g.X0 {
-			p1.X = g.X1 - (g.X0 - p1.X - 1)
+			p1.X = g.X1 - (g.X0-p1.X-1)%g.Width
 		}
 		if p1.Y > g.Y1 {
-			p1.Y = g.Y0 + (p1.Y - g.Y1 - 1)
+			p1.Y = g.Y0 + (p1.Y-g.Y1-1)%g.Width
 		} else if p1.Y < g.Y0 {
-			p1.Y = g.Y1 - (g.Y0 - p1.Y - 1)
+			p1.Y = g.Y1 - (g.Y0-p1.Y-1)%g.Width
 		}
 	}
 	return p1
