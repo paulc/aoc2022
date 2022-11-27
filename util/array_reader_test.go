@@ -25,10 +25,6 @@ type _point struct {
 	X, Y int
 }
 
-func ArrayEquals[T comparable](a1, a2 [][]T) bool {
-	return slices.EqualFunc(a1, a2, func(s1, s2 []T) bool { return slices.Equal(s1, s2) })
-}
-
 func ParsePoint(s string) (p _point, err error) {
 	xy := strings.SplitN(s, ":", 2)
 	if len(xy) != 2 {
@@ -67,7 +63,7 @@ func TestArrayReader(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := [][]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
-	if !ArrayEquals(out, expected) {
+	if !out.EqualFunc(expected, func(a, b int) bool { return a == b }) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
 	}
 }
@@ -90,7 +86,7 @@ func TestArrayReaderFunc(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := [][]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}
-	if !ArrayEquals(out, expected) {
+	if !out.EqualFunc(expected, func(a, b int) bool { return a == b }) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
 	}
 }
@@ -102,7 +98,7 @@ func TestArrayReaderPoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := [][]_point{{_point{1, 2}, _point{3, 4}, _point{5, 6}}, {_point{2, 1}, _point{4, 3}, _point{6, 5}}}
-	if !ArrayEquals(out, expected) {
+	if !out.EqualFunc(expected, func(a, b _point) bool { return a == b }) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
 	}
 }

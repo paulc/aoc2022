@@ -16,7 +16,7 @@ func TestHead(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := [][]int{{0, 0, 0}}
-	if !ArrayEquals(out, expected) {
+	if !out.EqualFunc(expected, func(a, b int) bool { return a == b }) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
 	}
 
@@ -25,7 +25,7 @@ func TestHead(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected = [][]int{{1, 1, 1}, {2, 2, 2}}
-	if !ArrayEquals(out, expected) {
+	if !out.EqualFunc(expected, func(a, b int) bool { return a == b }) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
 	}
 }
@@ -40,7 +40,7 @@ func TestHeadEOF(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := [][]int{{0, 0, 0}, {1, 1, 1}, {2, 2, 2}}
-	if !ArrayEquals(out, expected) {
+	if !out.EqualFunc(expected, func(a, b int) bool { return a == b }) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
 	}
 
@@ -59,7 +59,7 @@ func TestHeadFunc(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := [][]int{{0, 0, 0}}
-	if !ArrayEquals(out, expected) {
+	if !out.EqualFunc(expected, func(a, b int) bool { return a == b }) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
 	}
 
@@ -68,7 +68,7 @@ func TestHeadFunc(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected = [][]int{{1, 1, 1}, {2, 2, 2}}
-	if !ArrayEquals(out, expected) {
+	if !out.EqualFunc(expected, func(a, b int) bool { return a == b }) {
 		t.Errorf("Out: %v\nExpected: %v\n", out, expected)
 	}
 }
