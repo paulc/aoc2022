@@ -67,31 +67,47 @@ func (g *Graph) ShortestPath(start, end string) float64 {
 	return dist[end]
 }
 
-type PathQ []Path
+// XXX Not thread safe
+type PathQ struct {
+	path  []Path
+	index map[string]int
+}
 
-func (q PathQ) Len() int           { return len(q) }
-func (q PathQ) Less(i, j int) bool { return q[i].Cost < q[j].Cost }
-func (q PathQ) Swap(i, j int)      { q[i], q[j] = q[j], q[i] }
+func NewPathQ() *PathQ {
+	return &PathQ{index: make(map[string]int)}
+}
+
+func (q PathQ) Len() int {
+	return len(q.path)
+}
+
+func (q PathQ) Less(i, j int) bool {
+	return q.path[i].Cost < q.path[j].Cost
+}
+
+func (q PathQ) Swap(i, j int) {
+	q.index[q.path[i].To], q.index[q.path[j].To] = q.index[q.path[j].To], q.index[q.path[i].To]
+	q.path[i], q.path[j] = q.path[j], q.path[i]
+}
 
 func (q *PathQ) Push(x any) {
-	*q = append(*q, x.(Path))
+	q.path = append(q.path, x.(Path))
+	q.index[x.(Path).To] = len(q.path) - 1
 }
 
 func (q *PathQ) Pop() any {
-	old := *q
+	old := q.path
 	n := len(old)
 	x := old[n-1]
-	*q = old[0 : n-1]
+	q.path = old[0 : n-1]
+	delete(q.index, x.To)
 	return x
 }
 
 func (q *PathQ) UpdateCost(dest string, cost float64) {
-	for i, _ := range *q {
-		if (*q)[i].To == dest {
-			(*q)[i].Cost = cost
-			heap.Fix(q, i)
-			return
-		}
+	if i, ok := q.index[dest]; ok {
+		q.path[i].Cost = cost
+		heap.Fix(q, i)
 	}
 }
 
@@ -100,7 +116,7 @@ func (g *Graph) CalculatePaths(start string) (map[string]float64, map[string]str
 	cost[start] = 0
 
 	prev := make(map[string]string)
-	pathQ := &PathQ{}
+	pathQ := NewPathQ()
 	heap.Init(pathQ)
 
 	for k, _ := range *g {
@@ -111,7 +127,7 @@ func (g *Graph) CalculatePaths(start string) (map[string]float64, map[string]str
 		heap.Push(pathQ, Path{k, cost[k]})
 	}
 
-	for len(*pathQ) > 0 {
+	for pathQ.Len() > 0 {
 		u := heap.Pop(pathQ).(Path)
 		for _, v := range (*g)[u.To] {
 			if alt := cost[u.To] + v.Cost; alt < cost[v.To] {
