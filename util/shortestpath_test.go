@@ -164,6 +164,15 @@ func TestRoute(t *testing.T) {
 	}
 }
 
+func TestAstar(t *testing.T) {
+	g, err := makeGraph(bytes.NewBufferString(strings.TrimSpace(path_test)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cost := g.Astar("0:0", "9:9", func(s string) float64 { return 1.0 })
+	fmt.Println(cost)
+}
+
 func BenchmarkRoute(b *testing.B) {
 	r, err := UrlOpen("testdata/input.txt")
 	if err != nil {
