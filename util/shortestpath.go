@@ -9,34 +9,34 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type Edge struct {
-	To   string
+type Edge[T comparable] struct {
+	To   T
 	Cost float64
 }
 
-type Graph map[string][]Edge
+type Graph[T comparable] map[T][]Edge[T]
 
-func (g Graph) String() string {
+func (g Graph[T]) String() string {
 	out := []string{}
 	for k, v := range g {
-		out = append(out, fmt.Sprintf("%s -> %v", k, v))
+		out = append(out, fmt.Sprintf("%v -> %v", k, v))
 	}
 	slices.Sort(out)
 	return strings.Join(out, "\n")
 }
 
 // Simple Dijkstra
-func (g *Graph) ShortestPathSimple(start, end string) float64 {
-	Q := make(map[string]struct{})
+func (g *Graph[T]) ShortestPathSimple(start, end T) float64 {
+	Q := make(map[T]struct{})
 	for k, _ := range *g {
 		Q[k] = struct{}{}
 	}
-	known := make(map[string]struct{})
-	dist := make(map[string]float64)
+	known := make(map[T]struct{})
+	dist := make(map[T]float64)
 	dist[start] = 0
 	known[start] = struct{}{}
 	for len(Q) > 0 {
-		var u string
+		var u T
 		min := math.Inf(1)
 		for k, _ := range known {
 			if dist[k] < min {
@@ -65,35 +65,35 @@ func (g *Graph) ShortestPathSimple(start, end string) float64 {
 }
 
 // Priority Queue - not thread safe
-type PathQ struct {
-	path []Edge
+type PathQ[T comparable] struct {
+	path []Edge[T]
 	// We keep an index of keys->index for UpdateCost
-	index map[string]int
+	index map[T]int
 }
 
-func NewPathQ() *PathQ {
-	return &PathQ{index: make(map[string]int)}
+func NewPathQ[T comparable]() *PathQ[T] {
+	return &PathQ[T]{index: make(map[T]int)}
 }
 
-func (q PathQ) Len() int {
+func (q PathQ[T]) Len() int {
 	return len(q.path)
 }
 
-func (q PathQ) Less(i, j int) bool {
+func (q PathQ[T]) Less(i, j int) bool {
 	return q.path[i].Cost < q.path[j].Cost
 }
 
-func (q PathQ) Swap(i, j int) {
+func (q PathQ[T]) Swap(i, j int) {
 	q.index[q.path[i].To], q.index[q.path[j].To] = q.index[q.path[j].To], q.index[q.path[i].To]
 	q.path[i], q.path[j] = q.path[j], q.path[i]
 }
 
-func (q *PathQ) Push(x any) {
-	q.path = append(q.path, x.(Edge))
-	q.index[x.(Edge).To] = len(q.path) - 1
+func (q *PathQ[T]) Push(x any) {
+	q.path = append(q.path, x.(Edge[T]))
+	q.index[x.(Edge[T]).To] = len(q.path) - 1
 }
 
-func (q *PathQ) Pop() any {
+func (q *PathQ[T]) Pop() any {
 	old := q.path
 	n := len(old)
 	x := old[n-1]
@@ -102,7 +102,7 @@ func (q *PathQ) Pop() any {
 	return x
 }
 
-func (q *PathQ) UpdateCost(dest string, cost float64) {
+func (q *PathQ[T]) UpdateCost(dest T, cost float64) {
 	if i, ok := q.index[dest]; ok {
 		q.path[i].Cost = cost
 		heap.Fix(q, i)
@@ -110,24 +110,24 @@ func (q *PathQ) UpdateCost(dest string, cost float64) {
 }
 
 // Optimised Dijstra
-func (g *Graph) CalculatePaths(start string) (map[string]float64, map[string]string) {
-	cost := make(map[string]float64)
+func (g *Graph[T]) CalculatePaths(start T) (map[T]float64, map[T]T) {
+	cost := make(map[T]float64)
 	cost[start] = 0
 
-	prev := make(map[string]string)
-	pathQ := NewPathQ()
+	prev := make(map[T]T)
+	pathQ := NewPathQ[T]()
 	heap.Init(pathQ)
 
 	for k, _ := range *g {
 		if k != start {
 			cost[k] = math.Inf(1)
-			prev[k] = ""
+			// prev[k] = ""
 		}
-		heap.Push(pathQ, Edge{k, cost[k]})
+		heap.Push(pathQ, Edge[T]{k, cost[k]})
 	}
 
 	for pathQ.Len() > 0 {
-		u := heap.Pop(pathQ).(Edge)
+		u := heap.Pop(pathQ).(Edge[T])
 		for _, v := range (*g)[u.To] {
 			if alt := cost[u.To] + v.Cost; alt < cost[v.To] {
 				cost[v.To] = alt
@@ -139,10 +139,10 @@ func (g *Graph) CalculatePaths(start string) (map[string]float64, map[string]str
 	return cost, prev
 }
 
-func (g *Graph) Route(start, end string) (float64, []string) {
+func (g *Graph[T]) Route(start, end T) (float64, []T) {
 	cost, prev := g.CalculatePaths(start)
 	cur := end
-	route := []string{end}
+	route := []T{end}
 	for cur != start {
 		cur = prev[cur]
 		route = append(route, cur)
@@ -150,9 +150,9 @@ func (g *Graph) Route(start, end string) (float64, []string) {
 	return cost[end], route
 }
 
-type scoreMap map[string]float64
+type scoreMap[T comparable] map[T]float64
 
-func (m scoreMap) GetDefault(s string) float64 {
+func (m scoreMap[T]) GetDefault(s T) float64 {
 	if v, found := m[s]; found {
 		return v
 	} else {
@@ -162,32 +162,32 @@ func (m scoreMap) GetDefault(s string) float64 {
 
 // A*
 
-type score struct {
-	key   string
+type score[T comparable] struct {
+	key   T
 	score float64
 }
 
-type scoreQ struct {
-	scores  []score
-	members map[string]struct{}
+type scoreQ[T comparable] struct {
+	scores  []score[T]
+	members map[T]struct{}
 }
 
-func newScoreQ() *scoreQ {
-	q := &scoreQ{scores: []score{}, members: make(map[string]struct{})}
+func newScoreQ[T comparable]() *scoreQ[T] {
+	q := &scoreQ[T]{scores: []score[T]{}, members: make(map[T]struct{})}
 	heap.Init(q)
 	return q
 }
 
-func (q scoreQ) Len() int           { return len(q.scores) }
-func (q scoreQ) Less(i, j int) bool { return q.scores[i].score < q.scores[j].score }
-func (q scoreQ) Swap(i, j int)      { q.scores[i], q.scores[j] = q.scores[j], q.scores[i] }
+func (q scoreQ[T]) Len() int           { return len(q.scores) }
+func (q scoreQ[T]) Less(i, j int) bool { return q.scores[i].score < q.scores[j].score }
+func (q scoreQ[T]) Swap(i, j int)      { q.scores[i], q.scores[j] = q.scores[j], q.scores[i] }
 
-func (q *scoreQ) Push(x any) {
-	q.members[x.(score).key] = struct{}{}
-	q.scores = append(q.scores, x.(score))
+func (q *scoreQ[T]) Push(x any) {
+	q.members[x.(score[T]).key] = struct{}{}
+	q.scores = append(q.scores, x.(score[T]))
 }
 
-func (q *scoreQ) Pop() any {
+func (q *scoreQ[T]) Pop() any {
 	old := q.scores
 	n := len(old)
 	x := old[n-1]
@@ -196,19 +196,19 @@ func (q *scoreQ) Pop() any {
 	return x
 }
 
-func (q *scoreQ) Contains(key string) bool {
+func (q *scoreQ[T]) Contains(key T) bool {
 	_, found := q.members[key]
 	return found
 }
 
-func (g *Graph) Astar(start, end string, h func(s string) float64) float64 {
-	openSet := newScoreQ()
-	heap.Push(openSet, score{start, h(start)})
-	cameFrom := map[string]string{}
-	gScore := scoreMap{start: 0}
-	fScore := scoreMap{start: h(start)}
+func (g *Graph[T]) Astar(start, end T, h func(s T) float64) float64 {
+	openSet := newScoreQ[T]()
+	heap.Push(openSet, score[T]{start, h(start)})
+	cameFrom := map[T]T{}
+	gScore := scoreMap[T]{start: 0}
+	fScore := scoreMap[T]{start: h(start)}
 	for openSet.Len() > 0 {
-		current := heap.Pop(openSet).(score)
+		current := heap.Pop(openSet).(score[T])
 		if current.key == end {
 			break
 		}
@@ -219,7 +219,7 @@ func (g *Graph) Astar(start, end string, h func(s string) float64) float64 {
 				gScore[neighbour] = tentative_gScore
 				fScore[neighbour] = tentative_gScore + h(neighbour)
 				if !openSet.Contains(neighbour) {
-					heap.Push(openSet, score{neighbour, fScore[neighbour]})
+					heap.Push(openSet, score[T]{neighbour, fScore[neighbour]})
 				}
 			}
 		}

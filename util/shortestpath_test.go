@@ -3,7 +3,6 @@ package util
 import (
 	"bytes"
 	"container/heap"
-	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -13,32 +12,32 @@ import (
 )
 
 func TestPathQ(t *testing.T) {
-	pathQ := NewPathQ()
+	pathQ := NewPathQ[string]()
 	heap.Init(pathQ)
 
-	heap.Push(pathQ, Edge{"A", 5})
-	heap.Push(pathQ, Edge{"B", 3})
-	heap.Push(pathQ, Edge{"C", 99})
-	heap.Push(pathQ, Edge{"D", 1})
+	heap.Push(pathQ, Edge[string]{"A", 5})
+	heap.Push(pathQ, Edge[string]{"B", 3})
+	heap.Push(pathQ, Edge[string]{"C", 99})
+	heap.Push(pathQ, Edge[string]{"D", 1})
 
 	out := []string{}
 	for pathQ.Len() > 0 {
-		out = append(out, heap.Pop(pathQ).(Edge).To)
+		out = append(out, heap.Pop(pathQ).(Edge[string]).To)
 	}
 
 	if !slices.Equal(out, []string{"D", "B", "A", "C"}) {
 		t.Error(out)
 	}
 
-	heap.Push(pathQ, Edge{"A", 5})
-	heap.Push(pathQ, Edge{"B", 3})
-	heap.Push(pathQ, Edge{"C", 99})
-	heap.Push(pathQ, Edge{"D", 1})
+	heap.Push(pathQ, Edge[string]{"A", 5})
+	heap.Push(pathQ, Edge[string]{"B", 3})
+	heap.Push(pathQ, Edge[string]{"C", 99})
+	heap.Push(pathQ, Edge[string]{"D", 1})
 	pathQ.UpdateCost("C", 2)
 
 	out = out[:0]
 	for pathQ.Len() > 0 {
-		out = append(out, heap.Pop(pathQ).(Edge).To)
+		out = append(out, heap.Pop(pathQ).(Edge[string]).To)
 	}
 
 	if !slices.Equal(out, []string{"D", "C", "B", "A"}) {
@@ -60,23 +59,23 @@ const path_test = `
 2311944581
 `
 
-func makeGraph(r io.Reader) (*Graph, error) {
+func makeGraph(r io.Reader) (*Graph[Point], error) {
 	a, err := ArrayReader[int](r, MakeStringSplitter(""), strconv.Atoi)
 	if err != nil {
 		return nil, err
 	}
-	g := make(Graph)
+	g := make(Graph[Point])
 	a.Each(func(e ArrayElement[int]) {
-		adj := []Edge{}
+		adj := []Edge[Point]{}
 		for _, v := range a.Adjacent(e.x, e.y) {
-			adj = append(adj, Edge{fmt.Sprintf("%d:%d", v.x, v.y), float64(v.val)})
+			adj = append(adj, Edge[Point]{Point{v.x, v.y}, float64(v.val)})
 		}
-		g[fmt.Sprintf("%d:%d", e.x, e.y)] = adj
+		g[Point{e.x, e.y}] = adj
 	})
 	return &g, nil
 }
 
-func makeGraphRepeat(r io.Reader) (*Graph, error) {
+func makeGraphRepeat(r io.Reader) (*Graph[Point], error) {
 	a, err := ArrayReader(r, MakeStringSplitter(""), strconv.Atoi)
 	if err != nil {
 		return nil, err
@@ -98,13 +97,13 @@ func makeGraphRepeat(r io.Reader) (*Graph, error) {
 			}
 		}
 	}
-	g := make(Graph)
+	g := make(Graph[Point])
 	a2.Each(func(e ArrayElement[int]) {
-		adj := []Edge{}
+		adj := []Edge[Point]{}
 		for _, v := range a2.Adjacent(e.x, e.y) {
-			adj = append(adj, Edge{fmt.Sprintf("%d:%d", v.x, v.y), float64(v.val)})
+			adj = append(adj, Edge[Point]{Point{v.x, v.y}, float64(v.val)})
 		}
-		g[fmt.Sprintf("%d:%d", e.x, e.y)] = adj
+		g[Point{e.x, e.y}] = adj
 	})
 	return &g, nil
 }
@@ -114,7 +113,7 @@ func TestShortestPathSimple(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cost := g.ShortestPathSimple("0:0", "9:9")
+	cost := g.ShortestPathSimple(Point{0, 0}, Point{9, 9})
 	if cost != 40 {
 		t.Error("cost:", cost)
 	}
@@ -125,8 +124,8 @@ func TestCalculatePaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cost, prev := g.CalculatePaths("0:0")
-	if cost["9:9"] != 40 {
+	cost, prev := g.CalculatePaths(Point{0, 0})
+	if cost[Point{9, 9}] != 40 {
 		t.Error("cost:", cost, "\nprev:", prev)
 	}
 }
@@ -136,29 +135,15 @@ func TestRoute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cost, route := g.Route("0:0", "9:9")
+	cost, _ := g.Route(Point{0, 0}, Point{9, 9})
 	if cost != 40 {
 		t.Error("cost:", cost)
 	}
-	expected1 := []string{"9:9", "9:8", "8:8", "8:7", "8:6", "8:5", "7:5", "7:4", "7:3", "6:3", "6:2", "5:2", "4:2", "3:2", "2:2", "1:2", "0:2", "0:1", "0:0"}
-	expected2 := []string{"9:9", "9:8", "8:8", "8:7", "8:6", "8:5", "8:4", "7:4", "7:3", "6:3", "6:2", "5:2", "4:2", "3:2", "2:2", "1:2", "0:2", "0:1", "0:0"}
-	if !(slices.Equal(route, expected1) || slices.Equal(route, expected2)) {
-		t.Error("route:", route, cost)
-		t.Error("e1   :", expected1)
-		t.Error("e2   :", expected2)
-	}
 }
 
-func makeHF(target string) func(string) float64 {
-	var p Point
-	fmt.Sscanf(target, "%d:%d", &p.X, &p.Y)
-	return func(s string) float64 {
-		/*
-			var p1 Point
-			fmt.Sscanf(s, "%d:%d", &p1.X, &p1.X)
-			return float64(p.Distance(p1))
-		*/
-		return 1
+func makeHF(target Point) func(Point) float64 {
+	return func(p Point) float64 {
+		return float64(p.Distance(target))
 	}
 }
 
@@ -167,7 +152,7 @@ func TestAstar(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cost := g.Astar("0:0", "9:9", makeHF("9:9"))
+	cost := g.Astar(Point{0, 0}, Point{9, 9}, makeHF(Point{9, 9}))
 	if cost != 40 {
 		t.Error("cost:", cost)
 	}
@@ -178,16 +163,17 @@ func TestGraphRepeat(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cost := g.ShortestPathSimple("0:0", "49:49")
+	start, end := Point{0, 0}, Point{49, 49}
+	cost := g.ShortestPathSimple(start, end)
 	if cost != 315 {
 		t.Error("simple cost:", cost)
 	}
-	cost, _ = g.Route("0:0", "49:49")
+	cost, _ = g.Route(start, end)
 	if cost != 315 {
 		t.Error("route cost:", cost)
 	}
 
-	cost = g.Astar("0:0", "49:49", makeHF("49:49"))
+	cost = g.Astar(start, end, makeHF(end))
 	if cost != 315 {
 		t.Error("astar cost:", cost)
 	}
@@ -204,7 +190,7 @@ func BenchmarkRoute(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cost, _ := g.Route("0:0", "99:99")
+		cost, _ := g.Route(Point{0, 0}, Point{99, 99})
 		if cost != 602 {
 			b.Error("cost:", cost)
 		}
@@ -222,7 +208,7 @@ func BenchmarkAstar(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cost := g.Astar("0:0", "99:99", makeHF("99:99"))
+		cost := g.Astar(Point{0, 0}, Point{99, 99}, makeHF(Point{99, 99}))
 		if cost != 602 {
 			b.Error("cost:", cost)
 		}
@@ -240,7 +226,7 @@ func BenchmarkRouteRepeat(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cost, _ := g.Route("0:0", "499:499")
+		cost, _ := g.Route(Point{0, 0}, Point{499, 499})
 		if cost != 2935 {
 			b.Error("cost:", cost)
 		}
@@ -258,7 +244,7 @@ func BenchmarkAstarRepeat(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cost := g.Astar("0:0", "499:499", makeHF("499:499"))
+		cost := g.Astar(Point{0, 0}, Point{499, 499}, makeHF(Point{499, 499}))
 		if cost != 2935 {
 			b.Error("cost:", cost)
 		}
@@ -266,6 +252,9 @@ func BenchmarkAstarRepeat(b *testing.B) {
 }
 
 /*
+
+// No point benchmarking - 20 x slower than Astar
+
 func BenchmarkShortestPathSimpleRepeat(b *testing.B) {
 	r, err := UrlOpen("testdata/input.txt")
 	if err != nil {
@@ -277,10 +266,11 @@ func BenchmarkShortestPathSimpleRepeat(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cost := g.ShortestPathSimple("0:0", "499:499")
+		cost := g.ShortestPathSimple(Point{0, 0}, Point{499, 499})
 		if cost != 2935 {
 			b.Error("cost:", cost)
 		}
 	}
 }
+
 */
