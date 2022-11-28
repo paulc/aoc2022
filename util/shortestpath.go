@@ -9,12 +9,12 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type Path struct {
+type Edge struct {
 	To   string
 	Cost float64
 }
 
-type Graph map[string][]Path
+type Graph map[string][]Edge
 
 func (g Graph) String() string {
 	out := []string{}
@@ -25,7 +25,8 @@ func (g Graph) String() string {
 	return strings.Join(out, "\n")
 }
 
-func (g *Graph) ShortestPath(start, end string) float64 {
+// Simple Dijkstra
+func (g *Graph) ShortestPathSimple(start, end string) float64 {
 	Q := make(map[string]struct{})
 	for k, _ := range *g {
 		Q[k] = struct{}{}
@@ -35,9 +36,6 @@ func (g *Graph) ShortestPath(start, end string) float64 {
 	dist[start] = 0
 	known[start] = struct{}{}
 	for len(Q) > 0 {
-		// fmt.Println("Keys:", maps.Keys(Q))
-		// fmt.Println("Known:", maps.Keys(known))
-		// fmt.Println("Dist:", dist)
 		var u string
 		min := math.Inf(1)
 		for k, _ := range known {
@@ -46,7 +44,6 @@ func (g *Graph) ShortestPath(start, end string) float64 {
 				u = k
 			}
 		}
-		// fmt.Println("u >>", u)
 		delete(Q, u)
 		delete(known, u)
 		if u == end {
@@ -67,9 +64,10 @@ func (g *Graph) ShortestPath(start, end string) float64 {
 	return dist[end]
 }
 
-// XXX Not thread safe
+// Priority Queue - not thread safe
 type PathQ struct {
-	path  []Path
+	path []Edge
+	// We keep an index of keys->index for UpdateCost
 	index map[string]int
 }
 
@@ -91,8 +89,8 @@ func (q PathQ) Swap(i, j int) {
 }
 
 func (q *PathQ) Push(x any) {
-	q.path = append(q.path, x.(Path))
-	q.index[x.(Path).To] = len(q.path) - 1
+	q.path = append(q.path, x.(Edge))
+	q.index[x.(Edge).To] = len(q.path) - 1
 }
 
 func (q *PathQ) Pop() any {
@@ -124,11 +122,11 @@ func (g *Graph) CalculatePaths(start string) (map[string]float64, map[string]str
 			cost[k] = math.Inf(1)
 			prev[k] = ""
 		}
-		heap.Push(pathQ, Path{k, cost[k]})
+		heap.Push(pathQ, Edge{k, cost[k]})
 	}
 
 	for pathQ.Len() > 0 {
-		u := heap.Pop(pathQ).(Path)
+		u := heap.Pop(pathQ).(Edge)
 		for _, v := range (*g)[u.To] {
 			if alt := cost[u.To] + v.Cost; alt < cost[v.To] {
 				cost[v.To] = alt
