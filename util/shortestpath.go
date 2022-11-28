@@ -167,28 +167,47 @@ type score struct {
 	score float64
 }
 
-type scoreQ []score
+type scoreQ struct {
+	scores  []score
+	members map[string]struct{}
+}
 
-func (q scoreQ) Len() int           { return len(q) }
-func (q scoreQ) Less(i, j int) bool { return q[i].score < q[j].score }
-func (q scoreQ) Swap(i, j int)      { q[i], q[j] = q[j], q[i] }
-func (q *scoreQ) Push(x any)        { *q = append(*q, x.(score)) }
+func newScoreQ() *scoreQ {
+	q := &scoreQ{scores: []score{}, members: make(map[string]struct{})}
+	heap.Init(q)
+	return q
+}
+
+func (q scoreQ) Len() int           { return len(q.scores) }
+func (q scoreQ) Less(i, j int) bool { return q.scores[i].score < q.scores[j].score }
+func (q scoreQ) Swap(i, j int)      { q.scores[i], q.scores[j] = q.scores[j], q.scores[i] }
+
+func (q *scoreQ) Push(x any) {
+	q.members[x.(score).key] = struct{}{}
+	q.scores = append(q.scores, x.(score))
+}
 
 func (q *scoreQ) Pop() any {
-	old := *q
+	old := q.scores
 	n := len(old)
 	x := old[n-1]
-	*q = old[0 : n-1]
+	q.scores = old[0 : n-1]
+	delete(q.members, x.key)
 	return x
 }
 
+func (q *scoreQ) Contains(key string) bool {
+	_, found := q.members[key]
+	return found
+}
+
 func (g *Graph) Astar(start, end string, h func(s string) float64) float64 {
-	openSet := &scoreQ{score{start, h(start)}}
-	heap.Init(openSet)
+	openSet := newScoreQ()
+	heap.Push(openSet, score{start, h(start)})
 	cameFrom := map[string]string{}
 	gScore := scoreMap{start: 0}
 	fScore := scoreMap{start: h(start)}
-	for len(*openSet) > 0 {
+	for openSet.Len() > 0 {
 		current := heap.Pop(openSet).(score)
 		if current.key == end {
 			break
@@ -199,15 +218,7 @@ func (g *Graph) Astar(start, end string, h func(s string) float64) float64 {
 				cameFrom[neighbour] = current.key
 				gScore[neighbour] = tentative_gScore
 				fScore[neighbour] = tentative_gScore + h(neighbour)
-				// XXX
-				contains := false
-				for _, v := range *openSet {
-					if v.key == neighbour {
-						contains = true
-						break
-					}
-				}
-				if !contains {
+				if !openSet.Contains(neighbour) {
 					heap.Push(openSet, score{neighbour, fScore[neighbour]})
 				}
 			}
@@ -215,47 +226,3 @@ func (g *Graph) Astar(start, end string, h func(s string) float64) float64 {
 	}
 	return gScore[end]
 }
-
-/*
-
-function A_Star(start, goal, h)
-    // The set of discovered nodes that may need to be (re-)expanded.
-    // Initially, only the start node is known.
-    // This is usually implemented as a min-heap or priority queue rather than a hash-set.
-    openSet := {start}
-
-    // For node n, cameFrom[n] is the node immediately preceding it on the cheapest path from start
-    // to n currently known.
-    cameFrom := an empty map
-
-    // For node n, gScore[n] is the cost of the cheapest path from start to n currently known.
-    gScore := map with default value of Infinity
-    gScore[start] := 0
-
-    // For node n, fScore[n] := gScore[n] + h(n). fScore[n] represents our current best guess as to
-    // how cheap a path could be from start to finish if it goes through n.
-    fScore := map with default value of Infinity
-    fScore[start] := h(start)
-
-    while openSet is not empty
-        // This operation can occur in O(Log(N)) time if openSet is a min-heap or a priority queue
-        current := the node in openSet having the lowest fScore[] value
-        if current = goal
-            return reconstruct_path(cameFrom, current)
-
-        openSet.Remove(current)
-        for each neighbor of current
-            // d(current,neighbor) is the weight of the edge from current to neighbor
-            // tentative_gScore is the distance from start to the neighbor through current
-            tentative_gScore := gScore[current] + d(current, neighbor)
-            if tentative_gScore < gScore[neighbor]
-                // This path to neighbor is better than any previous one. Record it!
-                cameFrom[neighbor] := current
-                gScore[neighbor] := tentative_gScore
-                fScore[neighbor] := tentative_gScore + h(neighbor)
-                if neighbor not in openSet
-                    openSet.add(neighbor)
-
-    // Open set is empty but goal was never reached
-    return failure
-*/

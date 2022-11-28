@@ -149,12 +149,25 @@ func TestRoute(t *testing.T) {
 	}
 }
 
+func makeHF(target string) func(string) float64 {
+	var p Point
+	fmt.Sscanf(target, "%d:%d", &p.X, &p.Y)
+	return func(s string) float64 {
+		/*
+			var p1 Point
+			fmt.Sscanf(s, "%d:%d", &p1.X, &p1.X)
+			return float64(p.Distance(p1))
+		*/
+		return 1
+	}
+}
+
 func TestAstar(t *testing.T) {
 	g, err := makeGraph(bytes.NewBufferString(strings.TrimSpace(path_test)))
 	if err != nil {
 		t.Fatal(err)
 	}
-	cost := g.Astar("0:0", "9:9", func(s string) float64 { return 1.0 })
+	cost := g.Astar("0:0", "9:9", makeHF("9:9"))
 	if cost != 40 {
 		t.Error("cost:", cost)
 	}
@@ -174,7 +187,7 @@ func TestGraphRepeat(t *testing.T) {
 		t.Error("route cost:", cost)
 	}
 
-	cost = g.Astar("0:0", "49:49", func(s string) float64 { return 1.0 })
+	cost = g.Astar("0:0", "49:49", makeHF("49:49"))
 	if cost != 315 {
 		t.Error("astar cost:", cost)
 	}
@@ -192,6 +205,24 @@ func BenchmarkRoute(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		cost, _ := g.Route("0:0", "99:99")
+		if cost != 602 {
+			b.Error("cost:", cost)
+		}
+	}
+}
+
+func BenchmarkAstar(b *testing.B) {
+	r, err := UrlOpen("testdata/input.txt")
+	if err != nil {
+		b.Fatal(err)
+	}
+	g, err := makeGraph(r)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cost := g.Astar("0:0", "99:99", makeHF("99:99"))
 		if cost != 602 {
 			b.Error("cost:", cost)
 		}
@@ -216,6 +247,25 @@ func BenchmarkRouteRepeat(b *testing.B) {
 	}
 }
 
+func BenchmarkAstarRepeat(b *testing.B) {
+	r, err := UrlOpen("testdata/input.txt")
+	if err != nil {
+		b.Fatal(err)
+	}
+	g, err := makeGraphRepeat(r)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cost := g.Astar("0:0", "499:499", makeHF("499:499"))
+		if cost != 2935 {
+			b.Error("cost:", cost)
+		}
+	}
+}
+
+/*
 func BenchmarkShortestPathSimpleRepeat(b *testing.B) {
 	r, err := UrlOpen("testdata/input.txt")
 	if err != nil {
@@ -233,3 +283,4 @@ func BenchmarkShortestPathSimpleRepeat(b *testing.B) {
 		}
 	}
 }
+*/
