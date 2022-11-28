@@ -131,21 +131,6 @@ func TestCalculatePaths(t *testing.T) {
 	}
 }
 
-func TestGraphRepeat(t *testing.T) {
-	g, err := makeGraphRepeat(bytes.NewBufferString(strings.TrimSpace(path_test)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	cost := g.ShortestPathSimple("0:0", "49:49")
-	if cost != 315 {
-		t.Error("cost:", cost)
-	}
-	cost, _ = g.Route("0:0", "49:49")
-	if cost != 315 {
-		t.Error("cost:", cost)
-	}
-}
-
 func TestRoute(t *testing.T) {
 	g, err := makeGraph(bytes.NewBufferString(strings.TrimSpace(path_test)))
 	if err != nil {
@@ -170,7 +155,29 @@ func TestAstar(t *testing.T) {
 		t.Fatal(err)
 	}
 	cost := g.Astar("0:0", "9:9", func(s string) float64 { return 1.0 })
-	fmt.Println(cost)
+	if cost != 40 {
+		t.Error("cost:", cost)
+	}
+}
+
+func TestGraphRepeat(t *testing.T) {
+	g, err := makeGraphRepeat(bytes.NewBufferString(strings.TrimSpace(path_test)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cost := g.ShortestPathSimple("0:0", "49:49")
+	if cost != 315 {
+		t.Error("simple cost:", cost)
+	}
+	cost, _ = g.Route("0:0", "49:49")
+	if cost != 315 {
+		t.Error("route cost:", cost)
+	}
+
+	cost = g.Astar("0:0", "49:49", func(s string) float64 { return 1.0 })
+	if cost != 315 {
+		t.Error("astar cost:", cost)
+	}
 }
 
 func BenchmarkRoute(b *testing.B) {
