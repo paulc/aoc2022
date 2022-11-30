@@ -1,13 +1,15 @@
-package util
+package array
 
 import (
 	"io"
 	"regexp"
 	"strings"
+
+	"github.com/paulc/aoc2022/util/reader"
 )
 
 func ArrayReaderFunc[T any](r io.Reader, f func(s string) ([]T, error)) (out Array[T], err error) {
-	_, err = LineReader(r, func(s string) error {
+	_, err = reader.LineReader(r, func(s string) error {
 		if len(s) > 0 {
 			v, err := f(s)
 			if err != nil {
@@ -40,7 +42,7 @@ func LineParser[T any](line string, splitF func(string) ([]string, error), parse
 }
 
 func ArrayReader[T any](r io.Reader, splitF func(string) ([]string, error), parseF func(string) (T, error)) (out Array[T], err error) {
-	_, err = LineReader(r, func(s string) error {
+	_, err = reader.LineReader(r, func(s string) error {
 		if len(s) > 0 {
 			line, err := LineParser(s, splitF, parseF)
 			if err != nil {

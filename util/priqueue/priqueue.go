@@ -1,4 +1,4 @@
-package util
+package priqueue
 
 type Prioritised interface {
 	Priority() float64

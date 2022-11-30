@@ -1,30 +1,12 @@
-package util
+package grid
 
 import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/paulc/aoc2022/util/point"
 )
-
-type Point struct {
-	X, Y int
-}
-
-func (p Point) Move(dx, dy int) Point {
-	return Point{p.X + dx, p.Y + dy}
-}
-
-func absint(i int) int {
-	if i < 0 {
-		return -i
-	} else {
-		return i
-	}
-}
-
-func (p Point) Distance(p2 Point) int {
-	return absint(p.X-p2.X) + absint(p.Y-p2.Y)
-}
 
 type Grid[T any] struct {
 	X0, Y0, X1, Y1 int
@@ -43,11 +25,11 @@ func NewGrid[T any](x0, y0, x1, y1 int) (*Grid[T], error) {
 	return g, nil
 }
 
-func (g *Grid[T]) CheckBounds(p Point) bool {
+func (g *Grid[T]) CheckBounds(p point.Point) bool {
 	return !(p.X < g.X0 || p.X > g.X1 || p.Y < g.Y0 || p.Y > g.Y1)
 }
 
-func (g *Grid[T]) Set(p Point, val T) {
+func (g *Grid[T]) Set(p point.Point, val T) {
 	// We sliently ignore out of bounds errors
 	if !g.CheckBounds(p) {
 		return
@@ -55,7 +37,7 @@ func (g *Grid[T]) Set(p Point, val T) {
 	g.Data[(p.X-g.X0)+(p.Y-g.Y0)*g.Width] = val
 }
 
-func (g *Grid[T]) Get(p Point) (out T) {
+func (g *Grid[T]) Get(p point.Point) (out T) {
 	// Return zero val if out of bounds
 	if !g.CheckBounds(p) {
 		return
@@ -75,7 +57,7 @@ func (g *Grid[T]) String() string {
 	return strings.Join(rows, "\n")
 }
 
-func (g *Grid[T]) Adjacent(p Point) (out []Point) {
+func (g *Grid[T]) Adjacent(p point.Point) (out []point.Point) {
 	for _, v := range []struct{ dx, dy int }{{-1, 0}, {0, -1}, {1, 0}, {0, 1}} {
 		p1 := p.Move(v.dx, v.dy)
 		if g.CheckBounds(p1) {
@@ -85,14 +67,14 @@ func (g *Grid[T]) Adjacent(p Point) (out []Point) {
 	return
 }
 
-func (g *Grid[T]) AdjacentWrap(p Point) (out []Point) {
+func (g *Grid[T]) AdjacentWrap(p point.Point) (out []point.Point) {
 	for _, v := range []struct{ dx, dy int }{{-1, 0}, {0, -1}, {1, 0}, {0, 1}} {
 		out = append(out, g.Move(p, v.dx, v.dy))
 	}
 	return
 }
 
-func (g *Grid[T]) Move(p Point, dx, dy int) Point {
+func (g *Grid[T]) Move(p point.Point, dx, dy int) point.Point {
 	p1 := p.Move(dx, dy)
 	if !g.CheckBounds(p1) {
 		if p1.X > g.X1 {

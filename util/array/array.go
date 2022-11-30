@@ -1,4 +1,4 @@
-package util
+package array
 
 import (
 	"fmt"
@@ -10,12 +10,12 @@ import (
 type Array[T any] [][]T
 
 type ArrayElement[T any] struct {
-	x, y int
-	val  T
+	X, Y int
+	Val  T
 }
 
 func (e ArrayElement[T]) String() string {
-	return fmt.Sprintf("%d,%d: %v", e.x, e.y, e.val)
+	return fmt.Sprintf("%d,%d: %v", e.X, e.Y, e.Val)
 }
 
 func (a Array[T]) CompareFunc(b Array[T], f func(a, b T) int) int {

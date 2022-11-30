@@ -1,9 +1,10 @@
-package util
+package grid
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/paulc/aoc2022/util/point"
 	"golang.org/x/exp/slices"
 )
 
@@ -13,32 +14,22 @@ func (d _gridData) String() string {
 	return fmt.Sprintf("%3d", d)
 }
 
-func TestPoint(t *testing.T) {
-	p1 := Point{0, 0}
-	if (p1.Move(5, 5) != Point{5, 5}) {
-		t.Error(p1.Move(5, 5))
-	}
-	if p1.Distance(Point{5, -5}) != 10 {
-		t.Error(p1.Distance(Point{5, -5}))
-	}
-}
-
 func TestGridSetGetPrint(t *testing.T) {
 	for _, v := range []struct{ x0, y0, x1, y1 int }{{0, 0, 5, 5}, {-2, -2, 2, 2}} {
-		g, err := NewGrid[Point](v.x0, v.y0, v.x1, v.y1)
+		g, err := NewGrid[point.Point](v.x0, v.y0, v.x1, v.y1)
 		if err != nil {
 			t.Fatal(err)
 		}
 		for x := g.X0; x <= g.X1; x++ {
 			for y := g.Y0; y <= g.Y1; y++ {
-				g.Set(Point{x, y}, Point{x, y})
+				g.Set(point.Point{x, y}, point.Point{x, y})
 			}
 		}
 		t.Log("\n", g)
 		for x := g.X0; x <= g.X1; x++ {
 			for y := g.Y0; y <= g.Y1; y++ {
-				if !(g.Get(Point{x, y}) == Point{x, y}) {
-					t.Errorf("%v != %v", Point{x, y}, g.Get(Point{x, y}))
+				if !(g.Get(point.Point{x, y}) == point.Point{x, y}) {
+					t.Errorf("%v != %v", point.Point{x, y}, g.Get(point.Point{x, y}))
 				}
 			}
 		}
@@ -47,7 +38,7 @@ func TestGridSetGetPrint(t *testing.T) {
 
 func TestGridInvalid(t *testing.T) {
 	for _, v := range []struct{ x0, y0, x1, y1 int }{{0, 0, 0, 0}, {0, 0, -5, 5}, {-2, -2, 2, -2}} {
-		_, err := NewGrid[Point](v.x0, v.y0, v.x1, v.y1)
+		_, err := NewGrid[point.Point](v.x0, v.y0, v.x1, v.y1)
 		if err == nil {
 			t.Error("Expected error", v)
 		}
@@ -60,12 +51,12 @@ func TestGridCheckBounds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, v := range []Point{{0, 0}, {5, 5}, {10, 10}} {
+	for _, v := range []point.Point{{0, 0}, {5, 5}, {10, 10}} {
 		if !g.CheckBounds(v) {
 			t.Error("CheckBounds:", v)
 		}
 	}
-	for _, v := range []Point{{-1, 0}, {5, -5}, {10, 11}} {
+	for _, v := range []point.Point{{-1, 0}, {5, -5}, {10, 11}} {
 		if g.CheckBounds(v) {
 			t.Error("CheckBounds:", v)
 		}
@@ -75,12 +66,12 @@ func TestGridCheckBounds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, v := range []Point{{0, 0}, {5, -5}, {-5, -5}} {
+	for _, v := range []point.Point{{0, 0}, {5, -5}, {-5, -5}} {
 		if !g2.CheckBounds(v) {
 			t.Error("CheckBounds:", v)
 		}
 	}
-	for _, v := range []Point{{-10, 0}, {5, -6}, {5, 6}} {
+	for _, v := range []point.Point{{-10, 0}, {5, -6}, {5, 6}} {
 		if g2.CheckBounds(v) {
 			t.Error("CheckBounds:", v)
 		}
@@ -93,13 +84,13 @@ func TestGridAdjacent(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, v := range []struct {
-		p   Point
-		adj []Point
+		p   point.Point
+		adj []point.Point
 	}{
-		{Point{2, 2}, []Point{{1, 2}, {2, 1}, {3, 2}, {2, 3}}},
-		{Point{1, 2}, []Point{{0, 2}, {1, 1}, {2, 2}, {1, 3}}},
-		{Point{0, 0}, []Point{{1, 0}, {0, 1}}},
-		{Point{5, 5}, []Point{{4, 5}, {5, 4}}},
+		{point.Point{2, 2}, []point.Point{{1, 2}, {2, 1}, {3, 2}, {2, 3}}},
+		{point.Point{1, 2}, []point.Point{{0, 2}, {1, 1}, {2, 2}, {1, 3}}},
+		{point.Point{0, 0}, []point.Point{{1, 0}, {0, 1}}},
+		{point.Point{5, 5}, []point.Point{{4, 5}, {5, 4}}},
 	} {
 		if !slices.Equal(g.Adjacent(v.p), v.adj) {
 			t.Error(v, g.Adjacent(v.p))
@@ -113,12 +104,12 @@ func TestGridAdjacentWrap(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, v := range []struct {
-		p   Point
-		adj []Point
+		p   point.Point
+		adj []point.Point
 	}{
-		{Point{2, 2}, []Point{{1, 2}, {2, 1}, {3, 2}, {2, 3}}},
-		{Point{0, 0}, []Point{{5, 0}, {0, 5}, {1, 0}, {0, 1}}},
-		{Point{5, 5}, []Point{{4, 5}, {5, 4}, {0, 5}, {5, 0}}},
+		{point.Point{2, 2}, []point.Point{{1, 2}, {2, 1}, {3, 2}, {2, 3}}},
+		{point.Point{0, 0}, []point.Point{{5, 0}, {0, 5}, {1, 0}, {0, 1}}},
+		{point.Point{5, 5}, []point.Point{{4, 5}, {5, 4}, {0, 5}, {5, 0}}},
 	} {
 		if !slices.Equal(g.AdjacentWrap(v.p), v.adj) {
 			t.Error(v, g.AdjacentWrap(v.p))
@@ -133,15 +124,15 @@ func TestGridMove(t *testing.T) {
 	}
 
 	for _, v := range []struct {
-		p      Point
+		p      point.Point
 		dx, dy int
-		p2     Point
+		p2     point.Point
 	}{
-		{Point{0, 0}, -1, -1, Point{5, 5}},
-		{Point{0, 0}, -2, -2, Point{4, 4}},
-		{Point{2, 2}, -4, 1, Point{4, 3}},
-		{Point{5, 5}, 2, -2, Point{1, 3}},
-		{Point{0, 0}, 20, 20, Point{2, 2}},
+		{point.Point{0, 0}, -1, -1, point.Point{5, 5}},
+		{point.Point{0, 0}, -2, -2, point.Point{4, 4}},
+		{point.Point{2, 2}, -4, 1, point.Point{4, 3}},
+		{point.Point{5, 5}, 2, -2, point.Point{1, 3}},
+		{point.Point{0, 0}, 20, 20, point.Point{2, 2}},
 	} {
 		if g.Move(v.p, v.dx, v.dy) != v.p2 {
 			t.Error(v, "::", g.Move(v.p, v.dx, v.dy))
@@ -156,15 +147,15 @@ func TestGridMove2(t *testing.T) {
 	}
 
 	for _, v := range []struct {
-		p      Point
+		p      point.Point
 		dx, dy int
-		p2     Point
+		p2     point.Point
 	}{
-		{Point{0, 0}, -1, -1, Point{-1, -1}},
-		{Point{0, 0}, 3, 3, Point{-2, -2}},
-		{Point{0, 0}, -3, -3, Point{2, 2}},
-		{Point{0, 0}, 10, 10, Point{0, 0}},
-		{Point{0, 0}, -20, -20, Point{0, 0}},
+		{point.Point{0, 0}, -1, -1, point.Point{-1, -1}},
+		{point.Point{0, 0}, 3, 3, point.Point{-2, -2}},
+		{point.Point{0, 0}, -3, -3, point.Point{2, 2}},
+		{point.Point{0, 0}, 10, 10, point.Point{0, 0}},
+		{point.Point{0, 0}, -20, -20, point.Point{0, 0}},
 	} {
 		if g.Move(v.p, v.dx, v.dy) != v.p2 {
 			t.Error(v, "::", g.Move(v.p, v.dx, v.dy))

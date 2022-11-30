@@ -1,4 +1,4 @@
-package util
+package array
 
 import (
 	"fmt"
@@ -52,8 +52,8 @@ func TestArrayAdjacent(t *testing.T) {
 	sums := []int{}
 	a.Each(func(e ArrayElement[int]) {
 		sum := 0
-		for _, v := range a.Adjacent(e.x, e.y) {
-			sum += v.val
+		for _, v := range a.Adjacent(e.X, e.Y) {
+			sum += v.Val
 		}
 		sums = append(sums, sum)
 	})

@@ -1,4 +1,4 @@
-package util
+package priqueue
 
 import (
 	"container/heap"

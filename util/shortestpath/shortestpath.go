@@ -1,4 +1,4 @@
-package util
+package shortestpath
 
 import (
 	"container/heap"
