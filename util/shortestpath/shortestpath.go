@@ -168,44 +168,7 @@ type score[T comparable] struct {
 	score float64
 }
 
-/*
-type scoreQ[T comparable] struct {
-	scores  []score[T]
-	members map[T]struct{}
-}
-
-func newScoreQ[T comparable]() *scoreQ[T] {
-	q := &scoreQ[T]{scores: []score[T]{}, members: make(map[T]struct{})}
-	heap.Init(q)
-	return q
-}
-
-func (q scoreQ[T]) Len() int           { return len(q.scores) }
-func (q scoreQ[T]) Less(i, j int) bool { return q.scores[i].score < q.scores[j].score }
-func (q scoreQ[T]) Swap(i, j int)      { q.scores[i], q.scores[j] = q.scores[j], q.scores[i] }
-
-func (q *scoreQ[T]) Push(x any) {
-	q.members[x.(score[T]).key] = struct{}{}
-	q.scores = append(q.scores, x.(score[T]))
-}
-
-func (q *scoreQ[T]) Pop() any {
-	old := q.scores
-	n := len(old)
-	x := old[n-1]
-	q.scores = old[0 : n-1]
-	delete(q.members, x.key)
-	return x
-}
-
-func (q *scoreQ[T]) Contains(key T) bool {
-	_, found := q.members[key]
-	return found
-}
-*/
-
 func (g *Graph[T]) Astar(start, end T, h func(s T) float64) float64 {
-	//openSet := newScoreQ[T]()
 	openSet := priqueue.NewPriorityKeySet(func(s score[T]) float64 { return s.score }, func(s score[T]) T { return s.key })
 	heap.Push(openSet, score[T]{start, h(start)})
 	cameFrom := map[T]T{}

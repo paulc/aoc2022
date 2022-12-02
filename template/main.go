@@ -4,36 +4,28 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/paulc/aoc2022/util/array"
+	"github.com/paulc/aoc2022/util/must"
 )
 
-func parseInput(r io.Reader) array.Array[string] {
-	a, err := array.ArrayReader[string](r, array.SplitWS, func(s string) (string, error) { return s, nil })
-	if err != nil {
-		panic(err)
-	}
-	return a
+func parseInput(r io.Reader) array.Array[int] {
+	return must.Must(array.ArrayReader(r, array.SplitWS, func(s string) (int, error) { return strconv.Atoi(s) }))
 }
 
-func part1(input array.Array[string]) int {
+func part1(input array.Array[int]) int {
 	result := 0
 	return result
 }
 
-func part2(input array.Array[string]) int {
+func part2(input array.Array[int]) int {
 	result := 0
 	return result
 }
 
 func main() {
-	r, err := os.Open("input")
-	if err != nil {
-		panic(err)
-	}
-	defer r.Close()
-
-	input := parseInput(r)
+	input := parseInput(must.Must(os.Open("input")))
 	fmt.Println("Part1:", part1(input))
 	fmt.Println("Part2:", part2(input))
 }
