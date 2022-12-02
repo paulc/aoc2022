@@ -6,6 +6,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/paulc/aoc2022/util/priqueue"
 	"golang.org/x/exp/slices"
 )
 
@@ -167,6 +168,7 @@ type score[T comparable] struct {
 	score float64
 }
 
+/*
 type scoreQ[T comparable] struct {
 	scores  []score[T]
 	members map[T]struct{}
@@ -200,9 +202,11 @@ func (q *scoreQ[T]) Contains(key T) bool {
 	_, found := q.members[key]
 	return found
 }
+*/
 
 func (g *Graph[T]) Astar(start, end T, h func(s T) float64) float64 {
-	openSet := newScoreQ[T]()
+	//openSet := newScoreQ[T]()
+	openSet := priqueue.NewPriorityKeySet(func(s score[T]) float64 { return s.score }, func(s score[T]) T { return s.key })
 	heap.Push(openSet, score[T]{start, h(start)})
 	cameFrom := map[T]T{}
 	gScore := scoreMap[T]{start: 0}
