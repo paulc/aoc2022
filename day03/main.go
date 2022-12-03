@@ -21,8 +21,7 @@ func priority(s string) int {
 
 func parseInput(r io.Reader) (out [][]string) {
 	util.Must(reader.LineReader(r, func(s string) error {
-		l := strings.Split(s, "")
-		out = append(out, l)
+		out = append(out, strings.Split(s, ""))
 		return nil
 	}))
 	return
