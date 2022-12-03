@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/paulc/aoc2022/util/must"
+	"github.com/paulc/aoc2022/util"
 	"github.com/paulc/aoc2022/util/reader"
 	"golang.org/x/exp/slices"
 )
@@ -19,7 +19,7 @@ func parseInput(r io.Reader) []int {
 			elves = append(elves, 0)
 			i++
 		} else {
-			elves[i] += must.Must(strconv.Atoi(s))
+			elves[i] += util.Must(strconv.Atoi(s))
 		}
 		return nil
 	})
@@ -36,7 +36,7 @@ func part2(elves []int) int {
 }
 
 func main() {
-	input := parseInput(must.Must(os.Open("input")))
+	input := parseInput(util.Must(os.Open("input")))
 	fmt.Println("Part1:", part1(input))
 	fmt.Println("Part2:", part2(input))
 }

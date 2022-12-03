@@ -5,12 +5,12 @@ import (
 	"io"
 	"os"
 
+	"github.com/paulc/aoc2022/util"
 	"github.com/paulc/aoc2022/util/array"
-	"github.com/paulc/aoc2022/util/must"
 )
 
 func parseInput(r io.Reader) array.Array[string] {
-	return must.Must(array.ArrayReader[string](r, array.SplitWS, func(s string) (string, error) { return s, nil }))
+	return util.Must(array.ArrayReader[string](r, array.SplitWS, func(s string) (string, error) { return s, nil }))
 }
 
 var rules1 = map[string]map[string]int{
@@ -42,7 +42,7 @@ func part2(input array.Array[string]) int {
 }
 
 func main() {
-	input := parseInput(must.Must(os.Open("input")))
+	input := parseInput(util.Must(os.Open("input")))
 	fmt.Println("Part1:", part1(input))
 	fmt.Println("Part2:", part2(input))
 }
