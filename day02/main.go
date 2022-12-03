@@ -19,12 +19,11 @@ var rules1 = map[string]map[string]int{
 	"Z": {"A": 3, "B": 9, "C": 6}, // Scissors: 3 + result
 }
 
-func part1(input array.Array[string]) int {
-	score := 0
+func part1(input array.Array[string]) (result int) {
 	for _, v := range input {
-		score += rules1[v[1]][v[0]]
+		result += rules1[v[1]][v[0]]
 	}
-	return score
+	return result
 }
 
 var rules2 = map[string]map[string]int{
@@ -33,12 +32,11 @@ var rules2 = map[string]map[string]int{
 	"Z": {"A": 8, "B": 9, "C": 7}, // Win: 6 + val
 }
 
-func part2(input array.Array[string]) int {
-	score := 0
+func part2(input array.Array[string]) (result int) {
 	for _, v := range input {
-		score += rules2[v[1]][v[0]]
+		result += rules2[v[1]][v[0]]
 	}
-	return score
+	return result
 }
 
 func main() {

@@ -27,8 +27,7 @@ func parseInput(r io.Reader) (out [][]string) {
 	return
 }
 
-func part1(input [][]string) int {
-	result := 0
+func part1(input [][]string) (result int) {
 	for _, v := range input {
 		i, _ := set.NewSetFrom(v[:len(v)/2]).Intersection(set.NewSetFrom(v[len(v)/2:])).Pop()
 		result += priority(i)
@@ -36,8 +35,7 @@ func part1(input [][]string) int {
 	return result
 }
 
-func part2(input [][]string) int {
-	result := 0
+func part2(input [][]string) (result int) {
 	for _, v := range util.Take(input, 3) {
 		badge, _ := set.NewSetFrom(v[0]).Intersection(set.NewSetFrom(v[1])).Intersection(set.NewSetFrom(v[2])).Pop()
 		result += priority(badge)

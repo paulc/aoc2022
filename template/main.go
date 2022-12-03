@@ -14,13 +14,11 @@ func parseInput(r io.Reader) array.Array[int] {
 	return util.Must(array.ArrayReader(r, array.SplitWS, func(s string) (int, error) { return strconv.Atoi(s) }))
 }
 
-func part1(input array.Array[int]) int {
-	result := 0
+func part1(input array.Array[int]) (result int) {
 	return result
 }
 
-func part2(input array.Array[int]) int {
-	result := 0
+func part2(input array.Array[int]) (result int) {
 	return result
 }
 
