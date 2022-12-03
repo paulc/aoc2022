@@ -11,8 +11,6 @@ import (
 	"github.com/paulc/aoc2022/util/set"
 )
 
-type compartments struct{ a, b []string }
-
 func priority(s string) int {
 	if c := s[0]; c >= 'a' {
 		return int(c - 'a' + 1)
