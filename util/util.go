@@ -1,5 +1,10 @@
 package util
 
+import (
+	"regexp"
+	"strconv"
+)
+
 func Must[T any](r T, err error) T {
 	if err != nil {
 		panic(err)
@@ -20,6 +25,19 @@ func Take[T any](s []T, n int) (out [][]T) {
 	}
 	if len(group) > 0 {
 		out = append(out, group)
+	}
+	return
+}
+
+func SlurpInt(s string) (out []int, err error) {
+	for _, v := range regexp.MustCompile(`\D+`).Split(s, -1) {
+		if len(v) > 0 {
+			i, err := strconv.Atoi(v)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, i)
+		}
 	}
 	return
 }

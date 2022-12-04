@@ -33,3 +33,9 @@ func TestTake(t *testing.T) {
 		t.Error(out, expected)
 	}
 }
+
+func TestSlurpInt(t *testing.T) {
+	if !slices.Equal(Must(SlurpInt(`aa1234:"|777--888kkk`)), []int{1234, 777, 888}) {
+		t.Error(SlurpInt(`aa1234:"|777--888kkk`))
+	}
+}
