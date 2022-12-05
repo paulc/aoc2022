@@ -56,3 +56,11 @@ func URLReader(url string, f func(s string) error) (int, error) {
 
 	return LineReader(r, f)
 }
+
+func Lines(r io.Reader) (out []string, err error) {
+	_, err = LineReader(r, func(s string) error {
+		out = append(out, s)
+		return nil
+	})
+	return
+}

@@ -36,7 +36,7 @@ func part1(input [][]string) (result int) {
 }
 
 func part2(input [][]string) (result int) {
-	for _, v := range util.Take(input, 3) {
+	for _, v := range util.Group(input, 3) {
 		badge, _ := set.NewSetFrom(v[0]).Intersection(set.NewSetFrom(v[1])).Intersection(set.NewSetFrom(v[2])).Pop()
 		result += priority(badge)
 	}

@@ -67,3 +67,18 @@ func TestURLReader(t *testing.T) {
 		t.Errorf("Contents Error: %s", lines)
 	}
 }
+
+func TestLines(t *testing.T) {
+	r, err := UrlOpen("testdata/test.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines, err := Lines(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := strings.Split(strings.TrimSpace(contents), "\n")
+	if slices.Compare(lines, expected) != 0 {
+		t.Error(lines)
+	}
+}

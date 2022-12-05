@@ -12,7 +12,7 @@ func Must[T any](r T, err error) T {
 	return r
 }
 
-func Take[T any](s []T, n int) (out [][]T) {
+func Group[T any](s []T, n int) (out [][]T) {
 	i := 0
 	group := []T{}
 	for _, v := range s {
@@ -29,6 +29,22 @@ func Take[T any](s []T, n int) (out [][]T) {
 	return
 }
 
+func Split[T any](in []T, f func(T) bool) (head, tail []T) {
+	appendHead := true
+	for _, v := range in {
+		if f(v) {
+			appendHead = false
+			continue
+		}
+		if appendHead {
+			head = append(head, v)
+		} else {
+			tail = append(tail, v)
+		}
+	}
+	return
+}
+
 func SlurpInt(s string) (out []int, err error) {
 	for _, v := range regexp.MustCompile(`\D+`).Split(s, -1) {
 		if len(v) > 0 {
@@ -40,4 +56,33 @@ func SlurpInt(s string) (out []int, err error) {
 		}
 	}
 	return
+}
+
+func Map[T1, T2 any](in []T1, f func(T1) T2) (out []T2) {
+	for _, v := range in {
+		out = append(out, f(v))
+	}
+	return
+}
+
+func Apply[T any](in []T, f func(T)) {
+	for _, v := range in {
+		f(v)
+	}
+}
+
+func Filter[T any](in []T, f func(T) bool) (out []T) {
+	for _, v := range in {
+		if f(v) {
+			out = append(out, v)
+		}
+	}
+	return
+}
+
+func Reduce[T any](in []T, f func(a, b T) T, acc T) T {
+	for _, v := range in {
+		acc = f(acc, v)
+	}
+	return acc
 }
