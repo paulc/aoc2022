@@ -155,9 +155,12 @@ func TestAstar(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cost := g.Astar(point.Point{0, 0}, point.Point{9, 9}, makeHF(point.Point{9, 9}))
+	cost, path := g.Astar(point.Point{0, 0}, point.Point{9, 9}, makeHF(point.Point{9, 9}))
 	if cost != 40 {
 		t.Error("cost:", cost)
+	}
+	if len(path) != 19 {
+		t.Error("path:", path)
 	}
 }
 
@@ -176,7 +179,7 @@ func TestGraphRepeat(t *testing.T) {
 		t.Error("route cost:", cost)
 	}
 
-	cost = g.Astar(start, end, makeHF(end))
+	cost, _ = g.Astar(start, end, makeHF(end))
 	if cost != 315 {
 		t.Error("astar cost:", cost)
 	}
@@ -211,7 +214,7 @@ func BenchmarkAstar(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cost := g.Astar(point.Point{0, 0}, point.Point{99, 99}, makeHF(point.Point{99, 99}))
+		cost, _ := g.Astar(point.Point{0, 0}, point.Point{99, 99}, makeHF(point.Point{99, 99}))
 		if cost != 602 {
 			b.Error("cost:", cost)
 		}
@@ -247,7 +250,7 @@ func BenchmarkAstarRepeat(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		cost := g.Astar(point.Point{0, 0}, point.Point{499, 499}, makeHF(point.Point{499, 499}))
+		cost, _ := g.Astar(point.Point{0, 0}, point.Point{499, 499}, makeHF(point.Point{499, 499}))
 		if cost != 2935 {
 			b.Error("cost:", cost)
 		}
