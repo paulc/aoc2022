@@ -17,14 +17,11 @@ type Dir struct {
 	name     string
 	children map[string]*Dir
 	files    map[string]int
+	size     int
 }
 
 func NewDir(parent *Dir, name string) *Dir {
-	return &Dir{parent: parent, name: name, children: make(map[string]*Dir), files: make(map[string]int)}
-}
-
-func (d *Dir) String() string {
-	return strings.Join(d.List(0), "\n")
+	return &Dir{parent: parent, name: name, children: make(map[string]*Dir), files: make(map[string]int), size: -1}
 }
 
 func (d *Dir) Walk(f func(d *Dir)) {
@@ -40,17 +37,6 @@ func (d *Dir) Size() (size int) {
 	}
 	for _, v := range d.children {
 		size += v.Size()
-	}
-	return
-}
-
-func (d *Dir) List(depth int) (out []string) {
-	out = append(out, fmt.Sprintf("%s- %s (dir)", strings.Repeat("  ", depth), d.name))
-	for _, v := range d.children {
-		out = append(out, v.List(depth+1)...)
-	}
-	for k, v := range d.files {
-		out = append(out, fmt.Sprintf("%s- %s (file, size=%d)", strings.Repeat("  ", depth+1), k, v))
 	}
 	return
 }
@@ -112,7 +98,7 @@ func part2(root *Dir) (result int) {
 }
 
 func main() {
-	input := parseInput(util.Must(os.Open("input")))
-	fmt.Println("Part1:", part1(input))
-	fmt.Println("Part2:", part2(input))
+	root := parseInput(util.Must(os.Open("input")))
+	fmt.Println("Part1:", part1(root))
+	fmt.Println("Part2:", part2(root))
 }
