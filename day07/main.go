@@ -17,7 +17,6 @@ type Dir struct {
 	name     string
 	children map[string]*Dir
 	files    map[string]int
-	size     int
 }
 
 func NewDir(parent *Dir, name string) *Dir {
@@ -28,11 +27,11 @@ func (d *Dir) String() string {
 	return strings.Join(d.List(0), "\n")
 }
 
-func (d *Dir) Walk(path string, f func(path string, d *Dir)) {
+func (d *Dir) Walk(f func(d *Dir)) {
 	for _, v := range d.children {
-		v.Walk(path+v.name+"/", f)
+		v.Walk(f)
 	}
-	f(path, d)
+	f(d)
 }
 
 func (d *Dir) Size() (size int) {
@@ -92,7 +91,7 @@ func parseInput(r io.Reader) *Dir {
 }
 
 func part1(root *Dir) (result int) {
-	root.Walk("/", func(path string, d *Dir) {
+	root.Walk(func(d *Dir) {
 		if s := d.Size(); s < 100000 {
 			result += s
 		}
@@ -103,7 +102,7 @@ func part1(root *Dir) (result int) {
 func part2(root *Dir) (result int) {
 	need := 30000000 - (70000000 - root.Size())
 	avail := []int{}
-	root.Walk("/", func(path string, d *Dir) {
+	root.Walk(func(d *Dir) {
 		if s := d.Size(); s > need {
 			avail = append(avail, s)
 		}
