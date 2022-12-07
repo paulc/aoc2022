@@ -42,7 +42,6 @@ func (d *Dir) Size() (size int) {
 	for _, v := range d.children {
 		size += v.Size()
 	}
-	d.size = size
 	return
 }
 
@@ -89,25 +88,24 @@ func parseInput(r io.Reader) *Dir {
 			}
 		}
 	}
-	root.Size()
 	return root
 }
 
 func part1(root *Dir) (result int) {
 	root.Walk("/", func(path string, d *Dir) {
-		if d.size < 100000 {
-			result += d.size
+		if s := d.Size(); s < 100000 {
+			result += s
 		}
 	})
 	return result
 }
 
 func part2(root *Dir) (result int) {
-	need := 30000000 - (70000000 - root.size)
+	need := 30000000 - (70000000 - root.Size())
 	avail := []int{}
 	root.Walk("/", func(path string, d *Dir) {
-		if d.size > need {
-			avail = append(avail, d.size)
+		if s := d.Size(); s > need {
+			avail = append(avail, s)
 		}
 	})
 	sort.Ints(avail)
