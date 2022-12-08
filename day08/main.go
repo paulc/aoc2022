@@ -22,43 +22,34 @@ func parseInput(r io.Reader) array.Array[Tree] {
 }
 
 func part1(input array.Array[Tree]) (result int) {
-	h := len(input)
-	w := len(input[0])
+	h, w := len(input), len(input[0])
 	for y := 0; y < h; y++ {
-		for x, max := 0, -1; x < w; x++ {
-			if input[y][x].height > max {
-				input[y][x].visible = true
-				max = input[y][x].height
-			}
-		}
-		for x, max := w-1, -1; x >= 0; x-- {
-			if input[y][x].height > max {
-				input[y][x].visible = true
-				max = input[y][x].height
+		for _, v := range []struct{ start, dx int }{{0, 1}, {w - 1, -1}} {
+			for x, max := v.start, -1; x >= 0 && x < w; x += v.dx {
+				if input[y][x].height > max {
+					if !input[y][x].visible {
+						input[y][x].visible = true
+						result++
+					}
+					max = input[y][x].height
+				}
 			}
 		}
 	}
 	for x := 0; x < w; x++ {
-		for y, max := 0, -1; y < h; y++ {
-			if input[y][x].height > max {
-				input[y][x].visible = true
-				max = input[y][x].height
-			}
-		}
-		for y, max := h-1, -1; y >= 0; y-- {
-			if input[y][x].height > max {
-				input[y][x].visible = true
-				max = input[y][x].height
+		for _, v := range []struct{ start, dy int }{{0, 1}, {h - 1, -1}} {
+			for y, max := v.start, -1; y >= 0 && y < h; y += v.dy {
+				if input[y][x].height > max {
+					if !input[y][x].visible {
+						input[y][x].visible = true
+						result++
+					}
+					max = input[y][x].height
+				}
 			}
 		}
 	}
-	count := 0
-	input.Each(func(e array.ArrayElement[Tree]) {
-		if e.Val.visible {
-			count++
-		}
-	})
-	return count
+	return result
 }
 
 func part2(input array.Array[Tree]) (result int) {
@@ -67,15 +58,10 @@ func part2(input array.Array[Tree]) (result int) {
 	input.Each(func(e array.ArrayElement[Tree]) {
 		score := 1
 		for _, v := range []struct{ dx, dy int }{{-1, 0}, {0, -1}, {1, 0}, {0, 1}} {
-			x, y, view := e.X, e.Y, 0
-			for {
-				x, y = x+v.dx, y+v.dy
-				if x >= 0 && x < w && y >= 0 && y < h {
-					view++
-					if input[y][x].height >= e.Val.height {
-						break
-					}
-				} else {
+			view := 0
+			for x, y := e.X+v.dx, e.Y+v.dy; x >= 0 && x < w && y >= 0 && y < h; x, y = x+v.dx, y+v.dy {
+				view++
+				if input[y][x].height >= e.Val.height {
 					break
 				}
 			}
