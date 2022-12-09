@@ -37,6 +37,21 @@ var (
 	}
 )
 
+func moveRope(n int, moves []Move) int {
+	rope := make([]XY, n)
+	visited := set.NewSetFrom([]XY{XY{0, 0}})
+	for _, v := range moves {
+		for i := 0; i < v.count; i++ {
+			rope[0] = rope[0].Move(moveHead[v.dir])
+			for j := 1; j < n; j++ {
+				rope[j] = rope[j].Move(moveTail[rope[j-1].Offset(rope[j])])
+			}
+			visited.Add(rope[n-1])
+		}
+	}
+	return visited.Len()
+}
+
 func parseInput(r io.Reader) (out []Move) {
 	return util.Map(util.Must(reader.Lines(r)), func(s string) (m Move) {
 		util.Must(fmt.Sscanf(s, "%s %d", &m.dir, &m.count))
@@ -45,31 +60,11 @@ func parseInput(r io.Reader) (out []Move) {
 }
 
 func part1(input []Move) (result int) {
-	h, t := XY{}, XY{}
-	visited := set.NewSetFrom([]XY{XY{0, 0}})
-	for _, v := range input {
-		for i := 0; i < v.count; i++ {
-			h = h.Move(moveHead[v.dir])
-			t = t.Move(moveTail[h.Offset(t)])
-			visited.Add(t)
-		}
-	}
-	return visited.Len()
+	return moveRope(2, input)
 }
 
 func part2(input []Move) (result int) {
-	rope := [10]XY{}
-	visited := set.NewSetFrom([]XY{XY{0, 0}})
-	for _, v := range input {
-		for i := 0; i < v.count; i++ {
-			rope[0] = rope[0].Move(moveHead[v.dir])
-			for j := 1; j < 10; j++ {
-				rope[j] = rope[j].Move(moveTail[rope[j-1].Offset(rope[j])])
-			}
-			visited.Add(rope[9])
-		}
-	}
-	return visited.Len()
+	return moveRope(10, input)
 }
 
 func main() {
