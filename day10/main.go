@@ -16,74 +16,60 @@ type Cpu struct {
 	X int
 }
 
-func parseInput(r io.Reader) [][]string {
-	return util.Map(util.Must(reader.Lines(r)), func(s string) []string { return strings.Split(s, " ") })
-}
-
-func part1(input [][]string) (result int) {
-	cpu := Cpu{X: 1}
-	cycle := 0
-	interesting := set.NewSetFrom([]int{20, 60, 100, 140, 180, 220})
-	values := []int{}
-	for _, v := range input {
-		if v[0] == "noop" {
-			cycle += 1
-			if interesting.Has(cycle) {
-				values = append(values, cycle*cpu.X)
-			}
-		} else if v[0] == "addx" {
-			for i := 0; i < 2; i++ {
-				cycle += 1
-				if interesting.Has(cycle) {
-					values = append(values, cycle*cpu.X)
-				}
-			}
-			cpu.X += util.Must(strconv.Atoi(v[1]))
-		}
-	}
-	return util.Reduce(values, func(a, b int) int { return a + b }, 0)
-}
-
 type Crt [240]bool
 
 func (crt Crt) String() string {
+	x := util.Map(crt[:], func(p bool) byte { return map[bool]byte{true: '#', false: '.'}[p] })
 	out := []string{}
-	for r := 0; r < 6; r++ {
-		row := [40]byte{}
-		for c := 0; c < 40; c++ {
-			if crt[(r*40)+c] {
-				row[c] = '#'
-			} else {
-				row[c] = ' '
-			}
-		}
-		out = append(out, string(row[:]))
+	for i := 0; i < len(crt); i += 40 {
+		out = append(out, string(x[i:i+40]))
 	}
 	return strings.Join(out, "\n")
 }
 
-func part2(input [][]string) (result string) {
-	cpu := Cpu{X: 1}
-	cycle := 0
-	crt := Crt{}
+func parseInput(r io.Reader) [][]string {
+	return util.Map(util.Must(reader.Lines(r)), func(s string) []string { return strings.Split(s, " ") })
+}
+
+func runCpu(input [][]string, f func(cycle, X int)) {
+	cpu, cycle := Cpu{X: 1}, 0
 	for _, v := range input {
 		if v[0] == "noop" {
 			cycle += 1
-			pos := cycle - 1
-			if (pos%40) >= cpu.X-1 && (pos%40) <= cpu.X+1 {
-				crt[pos] = true
-			}
+			f(cycle, cpu.X)
 		} else if v[0] == "addx" {
 			for i := 0; i < 2; i++ {
 				cycle += 1
-				pos := cycle - 1
-				if (pos%40) >= cpu.X-1 && (pos%40) <= cpu.X+1 {
-					crt[pos] = true
-				}
+				f(cycle, cpu.X)
 			}
 			cpu.X += util.Must(strconv.Atoi(v[1]))
 		}
 	}
+}
+
+func setPixel(crt *Crt, cycle int, X int) {
+	pos := cycle - 1
+	if (pos%40) >= X-1 && (pos%40) <= X+1 {
+		(*crt)[pos] = true
+	}
+}
+
+func part1(input [][]string) (result int) {
+	interesting := set.NewSetFrom([]int{20, 60, 100, 140, 180, 220})
+	values := []int{}
+	runCpu(input, func(cycle, X int) {
+		if interesting.Has(cycle) {
+			values = append(values, cycle*X)
+		}
+	})
+	return util.Reduce(values, func(a, b int) int { return a + b }, 0)
+}
+
+func part2(input [][]string) (result string) {
+	crt := Crt{}
+	runCpu(input, func(cycle, X int) {
+		setPixel(&crt, cycle, X)
+	})
 	return crt.String()
 }
 
