@@ -12,10 +12,6 @@ import (
 	"github.com/paulc/aoc2022/util/set"
 )
 
-type Cpu struct {
-	X int
-}
-
 type Crt [240]bool
 
 func (crt Crt) String() string {
@@ -32,17 +28,17 @@ func parseInput(r io.Reader) [][]string {
 }
 
 func runCpu(input [][]string, f func(cycle, X int)) {
-	cpu, cycle := Cpu{X: 1}, 0
+	X, cycle := 1, 0
 	for _, v := range input {
 		if v[0] == "noop" {
 			cycle += 1
-			f(cycle, cpu.X)
+			f(cycle, X)
 		} else if v[0] == "addx" {
 			for i := 0; i < 2; i++ {
 				cycle += 1
-				f(cycle, cpu.X)
+				f(cycle, X)
 			}
-			cpu.X += util.Must(strconv.Atoi(v[1]))
+			X += util.Must(strconv.Atoi(v[1]))
 		}
 	}
 }
