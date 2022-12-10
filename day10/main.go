@@ -26,16 +26,16 @@ func parseInput(r io.Reader) [][]string {
 	return util.Map(util.Must(reader.Lines(r)), func(s string) []string { return strings.Split(s, " ") })
 }
 
-func runCpu(input [][]string, f func(cycle, X int)) {
+func runCpu(input [][]string, callback func(cycle, X int)) {
 	X, cycle := 1, 0
 	for _, v := range input {
 		if v[0] == "noop" {
 			cycle += 1
-			f(cycle, X)
+			callback(cycle, X)
 		} else if v[0] == "addx" {
 			for i := 0; i < 2; i++ {
 				cycle += 1
-				f(cycle, X)
+				callback(cycle, X)
 			}
 			X += util.Must(strconv.Atoi(v[1]))
 		}
