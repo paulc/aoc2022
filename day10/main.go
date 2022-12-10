@@ -43,13 +43,6 @@ func runCpu(input [][]string, f func(cycle, X int)) {
 	}
 }
 
-func setPixel(crt *Crt, cycle int, X int) {
-	pos := cycle - 1
-	if (pos%40) >= X-1 && (pos%40) <= X+1 {
-		(*crt)[pos] = true
-	}
-}
-
 func part1(input [][]string) (result int) {
 	interesting := set.NewSetFrom([]int{20, 60, 100, 140, 180, 220})
 	values := []int{}
@@ -64,7 +57,9 @@ func part1(input [][]string) (result int) {
 func part2(input [][]string) (result string) {
 	crt := Crt{}
 	runCpu(input, func(cycle, X int) {
-		setPixel(&crt, cycle, X)
+		if pos := cycle - 1; (pos%40) >= X-1 && (pos%40) <= X+1 {
+			crt[pos] = true
+		}
 	})
 	return crt.String()
 }
