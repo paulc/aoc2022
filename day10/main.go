@@ -9,7 +9,6 @@ import (
 
 	"github.com/paulc/aoc2022/util"
 	"github.com/paulc/aoc2022/util/reader"
-	"github.com/paulc/aoc2022/util/set"
 )
 
 type Crt [240]bool
@@ -44,14 +43,12 @@ func runCpu(input [][]string, f func(cycle, X int)) {
 }
 
 func part1(input [][]string) (result int) {
-	interesting := set.NewSetFrom([]int{20, 60, 100, 140, 180, 220})
-	values := []int{}
 	runCpu(input, func(cycle, X int) {
-		if interesting.Has(cycle) {
-			values = append(values, cycle*X)
+		if (cycle-20)%40 == 0 {
+			result += cycle * X
 		}
 	})
-	return util.Reduce(values, func(a, b int) int { return a + b }, 0)
+	return
 }
 
 func part2(input [][]string) (result string) {
