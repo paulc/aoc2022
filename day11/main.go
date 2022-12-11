@@ -72,17 +72,21 @@ func parseInput(r io.Reader) (out []Monkey, lcm int) {
 	return
 }
 
+func shuffle(monkeys []Monkey, div int, lcm int) {
+	for i := range monkeys {
+		for _, item := range monkeys[i].items {
+			monkeys[i].inspected++
+			wl := (monkeys[i].op(item) / div) % lcm
+			next := monkeys[i].next[monkeys[i].test(wl)]
+			monkeys[next].items = append(monkeys[next].items, wl)
+		}
+		monkeys[i].items = []int{}
+	}
+}
+
 func part1(monkeys []Monkey, lcm int) (result int) {
 	for round := 0; round < 20; round++ {
-		for i := range monkeys {
-			for _, item := range monkeys[i].items {
-				monkeys[i].inspected++
-				wl := monkeys[i].op(item) / 3
-				next := monkeys[i].next[monkeys[i].test(wl)]
-				monkeys[next].items = append(monkeys[next].items, wl)
-			}
-			monkeys[i].items = []int{}
-		}
+		shuffle(monkeys, 3, lcm)
 	}
 	slices.SortFunc(monkeys, func(a, b Monkey) bool { return a.inspected > b.inspected })
 	return monkeys[0].inspected * monkeys[1].inspected
@@ -90,15 +94,7 @@ func part1(monkeys []Monkey, lcm int) (result int) {
 
 func part2(monkeys []Monkey, lcm int) (result int) {
 	for round := 0; round < 10000; round++ {
-		for i := range monkeys {
-			for _, item := range monkeys[i].items {
-				monkeys[i].inspected++
-				wl := monkeys[i].op(item) % lcm
-				next := monkeys[i].next[monkeys[i].test(wl)]
-				monkeys[next].items = append(monkeys[next].items, wl)
-			}
-			monkeys[i].items = []int{}
-		}
+		shuffle(monkeys, 1, lcm)
 	}
 	slices.SortFunc(monkeys, func(a, b Monkey) bool { return a.inspected > b.inspected })
 	return monkeys[0].inspected * monkeys[1].inspected
