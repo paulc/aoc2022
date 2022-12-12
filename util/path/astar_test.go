@@ -101,11 +101,11 @@ func TestAstarMultiple(t *testing.T) {
 		t.Fatal(err)
 	}
 	out := g.AstarMultiple(point.Point{0, 0}, []point.Point{point.Point{9, 9}, point.Point{5, 5}}, makeHF(point.Point{9, 9}))
-	if out[0].cost != 40 {
-		t.Error("cost:", out[0].cost)
+	if out[0].Cost != 40 {
+		t.Error("cost:", out[0].Cost)
 	}
-	if len(out[0].path) != 19 {
-		t.Error("path:", out[0].path)
+	if len(out[0].Path) != 19 {
+		t.Error("path:", out[0].Path)
 	}
 }
 

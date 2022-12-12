@@ -64,9 +64,9 @@ func (g *Graph[T]) Astar(start, end T, h func(s T) float64) (cost float64, path 
 }
 
 type AstarResult[T comparable] struct {
-	end  T
-	cost float64
-	path []T
+	End  T
+	Cost float64
+	Path []T
 }
 
 func (g *Graph[T]) AstarMultiple(start T, endList []T, h func(s T) float64) (out []AstarResult[T]) {
@@ -92,19 +92,21 @@ func (g *Graph[T]) AstarMultiple(start T, endList []T, h func(s T) float64) (out
 		}
 	}
 	for _, end := range endList {
-		result := AstarResult[T]{end: end}
-		result.cost = gScore[end]
-		result.path = []T{end}
-		current := end
-		found := false
-		for {
-			current, found = cameFrom[current]
-			if !found {
-				break
+		if gScore[end] > 0 {
+			result := AstarResult[T]{End: end}
+			result.Cost = gScore[end]
+			result.Path = []T{end}
+			current := end
+			found := false
+			for {
+				current, found = cameFrom[current]
+				if !found {
+					break
+				}
+				result.Path = append(result.Path, current)
 			}
-			result.path = append(result.path, current)
+			out = append(out, result)
 		}
-		out = append(out, result)
 	}
 	return
 }
