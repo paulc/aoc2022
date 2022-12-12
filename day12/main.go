@@ -8,19 +8,19 @@ import (
 
 	"github.com/paulc/aoc2022/util"
 	"github.com/paulc/aoc2022/util/array"
+	"github.com/paulc/aoc2022/util/path"
 	"github.com/paulc/aoc2022/util/point"
-	"github.com/paulc/aoc2022/util/shortestpath"
 )
 
 type Hill struct {
 	start, end point.Point
 	lowest     []point.Point
-	graph      shortestpath.Graph[point.Point]
+	graph      path.Graph[point.Point]
 }
 
 func parseInput(r io.Reader) (hill Hill) {
 	a := util.Must(array.ArrayReader[byte](r, array.MakeStringSplitter(""), func(s string) (byte, error) { return s[0], nil }))
-	hill.graph = make(shortestpath.Graph[point.Point])
+	hill.graph = make(path.Graph[point.Point])
 	a.Each(func(p array.ArrayElement[byte]) {
 		if p.Val == 'S' {
 			hill.start = point.Point{p.X, p.Y}
@@ -34,10 +34,10 @@ func parseInput(r io.Reader) (hill Hill) {
 		}
 	})
 	a.Each(func(e array.ArrayElement[byte]) {
-		adj := []shortestpath.Edge[point.Point]{}
+		adj := []path.Edge[point.Point]{}
 		for _, v := range a.Adjacent(e.X, e.Y) {
 			if a[v.Y][v.X] <= (e.Val + 1) {
-				adj = append(adj, shortestpath.Edge[point.Point]{point.Point{v.X, v.Y}, 1})
+				adj = append(adj, path.Edge[point.Point]{point.Point{v.X, v.Y}, 1})
 			}
 		}
 		hill.graph[point.Point{e.X, e.Y}] = adj
