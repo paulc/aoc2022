@@ -95,6 +95,20 @@ func TestAstar(t *testing.T) {
 	}
 }
 
+func TestAstarMultiple(t *testing.T) {
+	g, err := makeGraph(bytes.NewBufferString(strings.TrimSpace(path_test)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := g.AstarMultiple(point.Point{0, 0}, []point.Point{point.Point{9, 9}, point.Point{5, 5}}, makeHF(point.Point{9, 9}))
+	if out[0].cost != 40 {
+		t.Error("cost:", out[0].cost)
+	}
+	if len(out[0].path) != 19 {
+		t.Error("path:", out[0].path)
+	}
+}
+
 func BenchmarkAstar(b *testing.B) {
 	r, err := reader.UrlOpen("testdata/input.txt")
 	if err != nil {
