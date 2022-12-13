@@ -76,3 +76,15 @@ func TestReduce(t *testing.T) {
 		t.Error(r)
 	}
 }
+
+func TestMin(t *testing.T) {
+	if Min(2, 1) != 1 || Min(1.5, 1.4) != 1.4 {
+		t.Error("Min")
+	}
+}
+
+func TestMax(t *testing.T) {
+	if Max(2, 1) != 2 || Max(1.5, 1.4) != 1.5 {
+		t.Error("Max")
+	}
+}

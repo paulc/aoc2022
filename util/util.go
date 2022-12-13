@@ -86,3 +86,19 @@ func Reduce[T any](in []T, f func(a, b T) T, acc T) T {
 	}
 	return acc
 }
+
+func Min[T ~int | ~float32 | ~float64](a, b T) T {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func Max[T ~int | ~float32 | ~float64](a, b T) T {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
