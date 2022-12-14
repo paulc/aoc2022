@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/paulc/aoc2022/util"
 	"github.com/paulc/aoc2022/util/point"
+	"golang.org/x/exp/slices"
 )
 
 type Grid[T any] struct {
@@ -23,6 +25,15 @@ func NewGrid[T any](x0, y0, x1, y1 int) (*Grid[T], error) {
 	g.Height = y1 - y0 + 1
 	g.Data = make([]T, g.Width*g.Height)
 	return g, nil
+}
+
+func (g *Grid[T]) Copy() (*Grid[T], error) {
+	g2, err := NewGrid[T](g.X0, g.Y0, g.X1, g.Y1)
+	if err != nil {
+		return nil, err
+	}
+	g2.Data = slices.Clone(g.Data)
+	return g2, nil
 }
 
 func (g *Grid[T]) CheckBounds(p point.Point) bool {
@@ -45,6 +56,18 @@ func (g *Grid[T]) Get(p point.Point) (out T) {
 	return g.Data[(p.X-g.X0)+(p.Y-g.Y0)*g.Width]
 }
 
+func (g *Grid[T]) DrawLine(start, end point.Point, val T) {
+	if start.X == end.X {
+		for y := util.Min(start.Y, end.Y); y <= util.Max(start.Y, end.Y); y++ {
+			g.Set(point.Point{start.X, y}, val)
+		}
+	} else {
+		for x := util.Min(start.X, end.X); x <= util.Max(start.X, end.X); x++ {
+			g.Set(point.Point{x, start.Y}, val)
+		}
+	}
+}
+
 func (g *Grid[T]) String() string {
 	rows := make([]string, g.Height)
 	for y := 0; y < g.Height; y++ {
@@ -52,7 +75,7 @@ func (g *Grid[T]) String() string {
 		for x := 0; x < g.Width; x++ {
 			line[x] = fmt.Sprintf("%v", g.Data[(y*g.Width)+x])
 		}
-		rows[y] = strings.Join(line, " ")
+		rows[y] = strings.Join(line, "")
 	}
 	return strings.Join(rows, "\n")
 }
