@@ -13,9 +13,12 @@ import (
 )
 
 func parseInput(r io.Reader) [][2]point.Point {
-	return util.Map(util.Must(reader.Lines(r)), func(s string) [2]point.Point {
-		i := util.Must(util.SlurpInt(s))
-		return [2]point.Point{point.Point{i[0], i[1]}, point.Point{i[2], i[3]}}
+	return util.Map(util.Must(reader.Lines(r)), func(s string) (out [2]point.Point) {
+		//var i [4]int
+		//util.Must(fmt.Sscanf(s, "Sensor at x=%d, y=%d: closest beacon is at x=%d, y=%d", &i[0], &i[1], &i[2], &i[3]))
+		util.Must(fmt.Sscanf(s, "Sensor at x=%d, y=%d: closest beacon is at x=%d, y=%d", &out[0].X, &out[0].Y, &out[1].X, &out[1].Y))
+		return
+		// return [2]point.Point{point.Point{i[0], i[1]}, point.Point{i[2], i[3]}}
 	})
 }
 

@@ -46,7 +46,7 @@ func Split[T any](in []T, f func(T) bool) (head, tail []T) {
 }
 
 func SlurpInt(s string) (out []int, err error) {
-	for _, v := range regexp.MustCompile(`[^0-9-]+`).Split(s, -1) {
+	for _, v := range regexp.MustCompile(`\D+`).Split(s, -1) {
 		if len(v) > 0 {
 			i, err := strconv.Atoi(v)
 			if err != nil {
