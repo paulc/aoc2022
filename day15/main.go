@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 
 	"github.com/paulc/aoc2022/util"
 	"github.com/paulc/aoc2022/util/point"
@@ -72,11 +73,22 @@ func part1(input [][2]point.Point, targetY int) (result int) {
 }
 
 func part2(input [][2]point.Point, maxXY int) (result int) {
-	for i := 0; i < maxXY; i++ {
-		excluded, _ := calculateExcluded(input, i)
-		if len(excluded) > 1 {
-			result = i + (excluded[0][1]+1)*4000000
-		}
+	ncpu := runtime.NumCPU()
+	out := make(chan int)
+	for start := 0; start < maxXY; start += maxXY / ncpu {
+		go func(start, count int, out chan int) {
+			for i := start; i < start+count; i++ {
+				excluded, _ := calculateExcluded(input, i)
+				if len(excluded) > 1 {
+					out <- i + (excluded[0][1]+1)*4000000
+					return
+				}
+			}
+		}(start, maxXY/ncpu, out)
+	}
+	select {
+	case result = <-out:
+		close(out)
 	}
 	return
 }
