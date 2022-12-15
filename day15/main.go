@@ -14,16 +14,34 @@ import (
 
 func parseInput(r io.Reader) [][2]point.Point {
 	return util.Map(util.Must(reader.Lines(r)), func(s string) (out [2]point.Point) {
-		//var i [4]int
-		//util.Must(fmt.Sscanf(s, "Sensor at x=%d, y=%d: closest beacon is at x=%d, y=%d", &i[0], &i[1], &i[2], &i[3]))
 		util.Must(fmt.Sscanf(s, "Sensor at x=%d, y=%d: closest beacon is at x=%d, y=%d", &out[0].X, &out[0].Y, &out[1].X, &out[1].Y))
 		return
-		// return [2]point.Point{point.Point{i[0], i[1]}, point.Point{i[2], i[3]}}
 	})
 }
 
+func merge(in [][2]int) (out [][2]int) {
+	slices.SortFunc(in, func(a, b [2]int) bool {
+		if a[0] == b[0] {
+			return a[1] < b[1]
+		}
+		return a[0] < b[0]
+	})
+	for i, _ := range in {
+		if i < len(in)-1 {
+			if in[i][1]+1 >= in[i+1][0] {
+				in[i+1][0] = in[i][0]
+				in[i+1][1] = util.Max(in[i][1], in[i+1][1])
+			} else {
+				out = append(out, in[i])
+			}
+		} else {
+			out = append(out, in[i])
+		}
+	}
+	return
+}
+
 func calculateExcluded(input [][2]point.Point, targetY int) (excluded [][2]int, beacons set.Set[int]) {
-	temp := [][2]int{}
 	beacons = set.NewSet[int]()
 	for _, v := range input {
 		if v[1].Y == targetY {
@@ -33,27 +51,10 @@ func calculateExcluded(input [][2]point.Point, targetY int) (excluded [][2]int, 
 		d := v[0].Distance(v[1])
 		dx := d - v[0].Ydistance(target)
 		if dx >= 0 {
-			temp = append(temp, [2]int{v[0].X - dx, v[0].X + dx})
+			excluded = append(excluded, [2]int{v[0].X - dx, v[0].X + dx})
 		}
 	}
-	slices.SortFunc(temp, func(a, b [2]int) bool {
-		if a[0] == b[0] {
-			return a[1] < b[1]
-		}
-		return a[0] < b[0]
-	})
-	for i, _ := range temp {
-		if i < len(temp)-1 {
-			if temp[i][1]+1 >= temp[i+1][0] {
-				temp[i+1][0] = temp[i][0]
-				temp[i+1][1] = util.Max(temp[i][1], temp[i+1][1])
-			} else {
-				excluded = append(excluded, temp[i])
-			}
-		} else {
-			excluded = append(excluded, temp[i])
-		}
-	}
+	excluded = merge(excluded)
 	return
 }
 
