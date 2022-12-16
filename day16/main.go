@@ -32,15 +32,6 @@ type state struct {
 	pressure int
 }
 
-type stateElephant struct {
-	timeYou          int
-	timeElephant     int
-	locationYou      string
-	locationElephant string
-	valvesOn         string
-	pressure         int
-}
-
 func parseInput(r io.Reader) cave {
 	paths := make(path.Graph[string])
 	valves := util.Map(util.Must(reader.Lines(r)), func(s string) (out valve) {
@@ -90,91 +81,6 @@ func search(input cave, current state, available set.Set[string], visited set.Se
 	}
 }
 
-func pairs[T any](in []T) (out [][2]T) {
-	for i := range in {
-		for j := range in {
-			if j != i {
-				out = append(out, [2]T{in[i], in[j]})
-			}
-		}
-	}
-	return
-}
-
-func searchElephant(input cave, current stateElephant, available set.Set[string], visited set.Set[stateElephant], tmax int) {
-	visited.Add(current)
-	if available.Len() == 1 {
-		v := available.Keys()[0]
-		next := current
-		tyou := current.timeYou + input.costs[current.locationYou+v] + 1
-		telephant := current.timeElephant + input.costs[current.locationElephant+v] + 1
-		remaining := available.Copy()
-		if tyou < tmax && tyou < telephant {
-			next.timeYou = tyou
-			next.locationYou = v
-			next.pressure += input.valveMap[v] * (tmax - tyou)
-			next.valvesOn = addValve(next.valvesOn, v)
-			remaining.Remove(v)
-		} else if telephant < tmax {
-			next.timeElephant = telephant
-			next.locationElephant = v
-			next.pressure += input.valveMap[v] * (tmax - telephant)
-			next.valvesOn = addValve(next.valvesOn, v)
-			remaining.Remove(v)
-		}
-		if !visited.Has(next) {
-			searchElephant(input, next, remaining, visited, tmax)
-		}
-
-		/*
-			v := available.Keys()[0]
-			tyou := current.timeYou + input.costs[current.locationYou+v] + 1
-			lyou := current.locationYou
-			telephant := current.timeElephant + input.costs[current.locationElephant+v] + 1
-			lelephant := current.locationElephant
-			pressure := current.pressure
-			von := current.valvesOn
-			if tyou <= telephant && tyou < tmax {
-				lyou = v
-				pressure += (input.valveMap[lyou] * (tmax - tyou))
-				von = addValve(von, lyou)
-				next := stateElephant{tyou, telephant, lyou, lelephant, von, pressure}
-				visited.Add(next)
-			} else if telephant < tyou && telephant < tmax {
-				lelephant = v
-				pressure += (input.valveMap[lelephant] * (tmax - telephant))
-				von = addValve(von, lelephant)
-				next := stateElephant{tyou, telephant, lyou, lelephant, von, pressure}
-				visited.Add(next)
-			}
-		*/
-	} else {
-		for _, v := range pairs(available.Keys()) {
-			next := current
-			tyou := current.timeYou + input.costs[current.locationYou+v[0]] + 1
-			telephant := current.timeElephant + input.costs[current.locationElephant+v[1]] + 1
-			remaining := available.Copy()
-			if tyou < tmax {
-				next.timeYou = tyou
-				next.locationYou = v[0]
-				next.pressure += input.valveMap[v[0]] * (tmax - tyou)
-				next.valvesOn = addValve(next.valvesOn, v[0])
-				remaining.Remove(v[0])
-			}
-			if telephant < tmax {
-				next.timeElephant = telephant
-				next.locationElephant = v[1]
-				next.pressure += input.valveMap[v[1]] * (tmax - telephant)
-				next.valvesOn = addValve(next.valvesOn, v[1])
-				remaining.Remove(v[1])
-			}
-			if !visited.Has(next) {
-				searchElephant(input, next, remaining, visited, tmax)
-			}
-		}
-	}
-}
-
 func part1(input cave) (result int) {
 
 	visited := set.NewSet[state]()
@@ -190,16 +96,34 @@ func part1(input cave) (result int) {
 }
 
 func part2(input cave) (result int) {
-	visited := set.NewSet[stateElephant]()
-	start := stateElephant{0, 0, "AA", "AA", "", 0}
+
+	// XXX This doesnt work properly (but does get the right answer) XXX
+
+	visited := set.NewSet[state]()
+	start := state{0, "AA", "", 0}
 	visited.Add(start)
 
-	searchElephant(input, start, input.available, visited, 26)
+	elephant_avail := input.available.Copy()
+	elephant_visited := visited.Copy()
+	search(input, start, input.available, visited, 26)
 
 	out := visited.Keys()
-	slices.SortFunc(out, func(a, b stateElephant) bool { return a.pressure < b.pressure })
+	slices.SortFunc(out, func(a, b state) bool { return a.pressure < b.pressure })
+	result = out[len(out)-1].pressure
 
-	return out[len(out)-1].pressure
+	done := set.NewSetFrom(strings.Split(out[len(out)-1].valvesOn, ","))
+
+	for k := range done {
+		elephant_avail.Remove(k)
+	}
+
+	search(input, start, elephant_avail, elephant_visited, 26)
+
+	elephant_out := elephant_visited.Keys()
+	slices.SortFunc(elephant_out, func(a, b state) bool { return a.pressure < b.pressure })
+	result += elephant_out[len(elephant_out)-1].pressure
+
+	return
 }
 
 func main() {
