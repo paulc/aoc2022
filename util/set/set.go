@@ -26,12 +26,14 @@ func (s Set[T]) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(out, " "))
 }
 
-func (s Set[T]) Add(v T) {
+func (s Set[T]) Add(v T) Set[T] {
 	s[v] = struct{}{}
+	return s
 }
 
-func (s Set[T]) Remove(v T) {
+func (s Set[T]) Remove(v T) Set[T] {
 	delete(s, v)
+	return s
 }
 
 func (s Set[T]) Has(v T) bool {
@@ -49,6 +51,11 @@ func (s1 Set[T]) Equals(s2 Set[T]) bool {
 		}
 	}
 	return true
+}
+
+func (s1 Set[T]) Keys() (out []T) {
+	s1.Apply(func(v T) { out = append(out, v) })
+	return
 }
 
 func (s1 Set[T]) Intersection(s2 Set[T]) Set[T] {
