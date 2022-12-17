@@ -21,7 +21,7 @@ func TestPart1(t *testing.T) {
 
 func TestPart2(t *testing.T) {
 	result := part2(input)
-	if result != 0 {
+	if result != 1514285714288 {
 		t.Error(result)
 	}
 }
