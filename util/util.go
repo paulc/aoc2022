@@ -102,3 +102,15 @@ func Max[T ~int | ~float32 | ~float64](a, b T) T {
 		return b
 	}
 }
+
+func Cycle[T any](in []T) <-chan T {
+	out := make(chan T)
+	go func() {
+		for {
+			for _, v := range in {
+				out <- v
+			}
+		}
+	}()
+	return out
+}

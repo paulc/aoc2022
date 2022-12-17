@@ -72,11 +72,9 @@ func (b *board) AddRock(r rock, jet <-chan byte) {
 		b.start += boardRows / 2
 	}
 	pos := xy{2, top}
-	var j byte
 
 	for {
-		j = <-jet
-		next := pos.Move(jetMove[j])
+		next := pos.Move(jetMove[<-jet])
 		if b.Check(next, r) {
 			pos = next
 		}
@@ -134,41 +132,15 @@ func (b board) String() string {
 	return strings.Join(out, "\n")
 }
 
-func cycle[T any](in []T) <-chan T {
-	out := make(chan T)
-	go func() {
-		for {
-			for _, v := range in {
-				out <- v
-			}
-		}
-	}()
-	return out
-}
-
 func parseInput(r io.Reader) (out startData) {
 	return bytes.TrimSpace(util.Must(io.ReadAll(r)))
 }
 
-func part1(input startData) (result int) {
-	b := board{}
-	jets := cycle(input)
-	i := 0
-	for v := range cycle(rocks) {
-		b.AddRock(v, jets)
-		i++
-		if i >= 2022 {
-			break
-		}
-	}
-	return b.top
-}
-
-func part2(input startData) (result int) {
+func run(input startData, nrocks int) int {
 	b := board{cache: make(map[signature][2]int)}
-	jets := cycle(input)
-	i, nrocks, found := 0, 1000000000000, false
-	for v := range cycle(rocks) {
+	jets := util.Cycle(input)
+	i, found := 0, false
+	for v := range util.Cycle(rocks) {
 		b.AddRock(v, jets)
 		i++
 		if b.top > boardRows/2 && !found {
@@ -190,6 +162,14 @@ func part2(input startData) (result int) {
 		}
 	}
 	return b.top
+}
+
+func part1(input startData) (result int) {
+	return run(input, 2022)
+}
+
+func part2(input startData) (result int) {
+	return run(input, 1000000000000)
 }
 
 func main() {
