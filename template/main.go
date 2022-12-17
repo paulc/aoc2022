@@ -4,21 +4,22 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 
 	"github.com/paulc/aoc2022/util"
-	"github.com/paulc/aoc2022/util/array"
 )
 
-func parseInput(r io.Reader) array.Array[int] {
-	return util.Must(array.ArrayReader(r, array.SplitWS, func(s string) (int, error) { return strconv.Atoi(s) }))
+type startData struct {
 }
 
-func part1(input array.Array[int]) (result int) {
+func parseInput(r io.Reader) (out startData) {
+	return
+}
+
+func part1(input startData) (result int) {
 	return result
 }
 
-func part2(input array.Array[int]) (result int) {
+func part2(input startData) (result int) {
 	return result
 }
 
