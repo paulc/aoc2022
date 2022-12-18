@@ -21,9 +21,10 @@ func (p xy) Move(o offset) xy {
 type offset struct{ dx, dy int }
 
 const boardRows = 100
+const signatureRows = 25
 
 type signature struct {
-	rows [boardRows / 4]int8
+	rows [signatureRows]int8
 	rock int
 }
 
@@ -93,7 +94,7 @@ func (b *board) AddRock(r rock, jet <-chan byte) {
 
 func (b *board) CalculateSignature(r rock) (sig signature) {
 	sig.rock = r.index
-	for i := 0; i < boardRows/4; i++ {
+	for i := 0; i < signatureRows; i++ {
 		sig.rows[i] = toInt8(b.rows[b.top-b.start-i])
 	}
 	return
