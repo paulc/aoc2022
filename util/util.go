@@ -87,20 +87,23 @@ func Reduce[T any](in []T, f func(a, b T) T, acc T) T {
 	return acc
 }
 
-func Min[T ~int | ~float32 | ~float64](a, b T) T {
-	if a < b {
-		return a
-	} else {
-		return b
+func Min[T ~int | ~float32 | ~float64](in ...T) (out T) {
+	out = in[0]
+	for _, v := range in {
+		if v < out {
+			out = v
+		}
 	}
+	return
 }
 
-func Max[T ~int | ~float32 | ~float64](a, b T) T {
-	if a > b {
-		return a
-	} else {
-		return b
+func Max[T ~int | ~float32 | ~float64](in ...T) (out T) {
+	for _, v := range in {
+		if v > out {
+			out = v
+		}
 	}
+	return
 }
 
 func Cycle[T any](in []T) <-chan T {

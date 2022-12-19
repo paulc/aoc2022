@@ -22,7 +22,7 @@ func TestPart1(t *testing.T) {
 
 func TestPart2(t *testing.T) {
 	result := part2(input)
-	if result != 0 {
+	if result != 3472 {
 		t.Error(result)
 	}
 }

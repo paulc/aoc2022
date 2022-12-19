@@ -36,3 +36,9 @@ func (q *PriorityQueue[T]) Pop() any {
 	q.values = old[0 : n-1]
 	return x
 }
+
+func (q *PriorityQueue[T]) Prune(n int) {
+	if len(q.values) > n {
+		q.values = q.values[0:n]
+	}
+}

@@ -16,4 +16,8 @@ func TestPriorityQueue(t *testing.T) {
 	if !slices.Equal(q.values, []int{1, 3, 5, 10}) {
 		t.Error(*q)
 	}
+	q.Prune(2)
+	if !slices.Equal(q.values, []int{1, 3}) {
+		t.Error(*q)
+	}
 }
