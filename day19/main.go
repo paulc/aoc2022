@@ -101,14 +101,15 @@ func run_blueprint(b blueprint, s state, seen set.Set[state], tmax int, out *[]i
 					run_blueprint(b, s2, seen, tmax, out)
 				}
 			}
-			if afford(b, s, ore) && need(b, s, ore) {
-				s2 := buy(b, update(s), ore)
-				if !seen.Has(s2) {
-					seen.Add(s2)
-					run_blueprint(b, s2, seen, tmax, out)
+			// If we can build an obsidian robot choose between that and clay only (???)
+			if !build_obsidian {
+				if afford(b, s, ore) && need(b, s, ore) {
+					s2 := buy(b, update(s), ore)
+					if !seen.Has(s2) {
+						seen.Add(s2)
+						run_blueprint(b, s2, seen, tmax, out)
+					}
 				}
-			}
-			if !build_obsidian { // If we can build an obsidian robot dont try mining as well (???)
 				s2 := update(s)
 				if !seen.Has(s2) {
 					seen.Add(s2)
