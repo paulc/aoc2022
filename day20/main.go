@@ -26,14 +26,13 @@ func (l *LL) String() string {
 
 func (l *LL) Move(n, max int) (out *LL) {
 	out = l
-	// n = (n % max) + (n / max) // XXX This doesnt make sense
 	n = n % (max - 1)
 	if n > 0 {
 		for i := 0; i < n; i++ {
 			out = out.next
 		}
 	} else {
-		for i := 0; i < -n; i++ {
+		for i := 0; i <= -n; i++ {
 			out = out.prev
 		}
 	}
@@ -50,10 +49,6 @@ func (l *LL) MoveN(n int) (out *LL) {
 
 func (i1 *LL) InsertAfter(i2 *LL) {
 	i1.next, i1.next.prev, i2.prev, i2.next = i2, i2, i1, i1.next
-}
-
-func (i1 *LL) InsertBefore(i2 *LL) {
-	i2.next, i2.prev, i1.prev.next, i1.prev = i1, i1.prev, i2, i2
 }
 
 func (i1 *LL) Remove() *LL {
@@ -94,38 +89,11 @@ func parseInput(r io.Reader) (out startData) {
 	return
 }
 
-func compare(n int, input startData, old_input old) (errors int) {
-	var old_zero int
-	for i, v := range old_input.data {
-		if v.val == 0 {
-			old_zero = i
-			break
-		}
-	}
-	current := input.zero
-	for i := 0; i < input.length; i++ {
-		vold := old_input.data[(i+old_zero)%input.length].val
-		vnew := current.val
-		current = current.next
-		if vold != vnew {
-			fmt.Println("Cycle:", n, ">>", i, ":", vold, vnew)
-			errors++
-		}
-	}
-	return
-}
-
 func part1(input startData) (result int) {
 	for i := 0; i < input.length; i++ {
 		i1 := input.ptr[i]
 		i2 := i1.Move(i1.val, input.length)
-		if i1 != i2 {
-			if i1.val > 0 {
-				i2.InsertAfter(i1.Remove())
-			} else {
-				i2.InsertBefore(i1.Remove())
-			}
-		}
+		i2.InsertAfter(i1.Remove())
 	}
 	return input.zero.MoveN(1000).val + input.zero.MoveN(2000).val + input.zero.MoveN(3000).val
 }
@@ -138,13 +106,7 @@ func part2(input startData) (result int) {
 		for i := 0; i < input.length; i++ {
 			i1 := input.ptr[i]
 			i2 := i1.Move(i1.val, input.length)
-			if i1 != i2 {
-				if i1.val > 0 {
-					i2.InsertAfter(i1.Remove())
-				} else {
-					i2.InsertBefore(i1.Remove())
-				}
-			}
+			i2.InsertAfter(i1.Remove())
 		}
 	}
 	return input.zero.MoveN(1000).val + input.zero.MoveN(2000).val + input.zero.MoveN(3000).val
