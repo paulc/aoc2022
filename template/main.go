@@ -6,12 +6,15 @@ import (
 	"os"
 
 	"github.com/paulc/aoc2022/util"
+	"github.com/paulc/aoc2022/util/reader"
 )
 
 type startData struct {
 }
 
 func parseInput(r io.Reader) (out startData) {
+	util.Must(reader.LineReader(r, func(s string) error {
+	}))
 	return
 }
 
