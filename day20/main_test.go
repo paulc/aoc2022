@@ -25,7 +25,7 @@ func TestPart1(t *testing.T) {
 
 func TestPart2(t *testing.T) {
 	result := part2(parseInput(bytes.NewBufferString(strings.TrimSpace(testdata))))
-	if result != 0 {
+	if result != 1623178306 {
 		t.Error(result)
 	}
 }
