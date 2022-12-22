@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/heap"
 	"fmt"
 	"io"
 	"os"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/paulc/aoc2022/util"
 	"github.com/paulc/aoc2022/util/path"
+	"github.com/paulc/aoc2022/util/priqueue"
 	"github.com/paulc/aoc2022/util/reader"
 	"github.com/paulc/aoc2022/util/set"
 	"golang.org/x/exp/slices"
@@ -81,6 +83,50 @@ func search(input cave, current state, available set.Set[string], visited set.Se
 	}
 }
 
+func split[T comparable](in set.Set[T], n int) (out []struct{ a, b set.Set[T] }) {
+	if n == 1 {
+		keys := in.Keys()
+		for i := 0; i < len(keys); i++ {
+			a := set.NewSetFrom([]T{keys[i]})
+			b := in.Copy().Remove(keys[i])
+			out = append(out, struct{ a, b set.Set[T] }{a, b})
+		}
+		return
+	}
+	for _, v := range split(in, n-1) {
+		for _, v2 := range split(v.b, 1) {
+			a := v.a.Union(v2.a)
+			b := v2.b
+			out = append(out, struct{ a, b set.Set[T] }{a, b})
+		}
+	}
+	return
+}
+
+func search2(input cave, start state, startValves set.Set[string], tmax int) (result int) {
+	q := priqueue.NewPriorityQueue[state](func(s state) float64 { return float64(-s.pressure) })
+	visited := set.NewSetFrom([]state{start})
+	heap.Push(q, start)
+	for q.Len() > 0 {
+		current := heap.Pop(q).(state)
+		if current.pressure > result {
+			result = current.pressure
+		}
+		available := startValves.Difference(set.NewSetFrom(strings.Split(current.valvesOn, ",")))
+		for v := range available {
+			tnext := current.time + input.costs[current.location+v] + 1
+			if tnext < tmax {
+				next := state{tnext, v, addValve(current.valvesOn, v), current.pressure + (input.valveMap[v] * (tmax - tnext))}
+				if !visited.Has(next) {
+					visited.Add(next)
+					heap.Push(q, next)
+				}
+			}
+		}
+	}
+	return
+}
+
 func part1(input cave) (result int) {
 
 	visited := set.NewSet[state]()
@@ -96,6 +142,23 @@ func part1(input cave) (result int) {
 }
 
 func part2(input cave) (result int) {
+	//start := state{0, "AA", "", 0}
+	// mid := len(input.available) / 2
+	for _, v := range split(input.available, 5) {
+		fmt.Println(v.a.Keys(), v.b.Keys())
+		/*
+			r := search2(input, start, v.a, 26) + search2(input, start, v.b, 26)
+			fmt.Println(v.a.Keys(), v.b.Keys(), r)
+			if r > result {
+				result = r
+				fmt.Println(v.a.Keys(), v.b.Keys(), result)
+			}
+		*/
+	}
+	return
+}
+
+/*
 
 	// XXX This doesnt work properly (but does get the right answer) XXX
 
@@ -122,12 +185,10 @@ func part2(input cave) (result int) {
 	elephant_out := elephant_visited.Keys()
 	slices.SortFunc(elephant_out, func(a, b state) bool { return a.pressure < b.pressure })
 	result += elephant_out[len(elephant_out)-1].pressure
-
-	return
-}
+*/
 
 func main() {
 	input := parseInput(util.Must(os.Open("input")))
-	fmt.Println("Part1:", part1(input))
+	// fmt.Println("Part1:", part1(input))
 	fmt.Println("Part2:", part2(input))
 }

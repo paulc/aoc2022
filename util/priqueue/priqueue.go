@@ -42,3 +42,13 @@ func (q *PriorityQueue[T]) Prune(n int) {
 		q.values = q.values[0:n]
 	}
 }
+
+func (q *PriorityQueue[T]) Top(n int) (out []T) {
+	if n >= q.Len() {
+		n = q.Len() - 1
+	}
+	for i := 0; i < n; i++ {
+		out = append(out, q.values[n])
+	}
+	return
+}

@@ -66,3 +66,12 @@ func TestSetUnion(t *testing.T) {
 		t.Error(s3)
 	}
 }
+
+func TestSetDifference(t *testing.T) {
+	s1 := NewSetFrom([]string{"AA", "BB", "CC"})
+	s2 := NewSetFrom([]string{"BB", "CC", "DD"})
+	s3 := s1.Difference(s2)
+	if !s3.Equals(NewSetFrom([]string{"AA"})) {
+		t.Error(s3)
+	}
+}

@@ -75,6 +75,16 @@ func (s1 Set[T]) Union(s2 Set[T]) Set[T] {
 	return out
 }
 
+func (s1 Set[T]) Difference(s2 Set[T]) Set[T] {
+	out := NewSet[T]()
+	s1.Apply(func(v T) {
+		if !s2.Has(v) {
+			out.Add(v)
+		}
+	})
+	return out
+}
+
 func (s Set[T]) Apply(f func(T)) {
 	for k, _ := range s {
 		f(k)

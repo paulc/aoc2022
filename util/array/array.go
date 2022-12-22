@@ -38,7 +38,7 @@ func (a Array[T]) String() string {
 		for x := 0; x < w; x++ {
 			line[x] = fmt.Sprintf("%v", a[y][x])
 		}
-		rows[y] = strings.Join(line, " ")
+		rows[y] = strings.Join(line, "")
 	}
 	return strings.Join(rows, "\n")
 }
@@ -59,6 +59,23 @@ func (a Array[T]) Transpose() Array[T] {
 		}
 	}
 	return out
+}
+
+func (a Array[T]) Copy() Array[T] {
+	if len(a) == 0 {
+		return Array[T]{}
+	}
+	h := len(a)
+	out := make(Array[T], h)
+	for y := 0; y < h; y++ {
+		out[y] = slices.Clone(a[y])
+	}
+	return out
+}
+
+func (a Array[T]) Set(x, y int, v T) Array[T] {
+	a[y][x] = v
+	return a
 }
 
 func (a Array[T]) Each(f func(ArrayElement[T])) {
