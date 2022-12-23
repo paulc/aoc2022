@@ -58,6 +58,24 @@ func TestSetIntersection(t *testing.T) {
 	}
 }
 
+func TestSetIntersection2(t *testing.T) {
+	s1 := NewSetFrom([]string{"BB"})
+	s2 := NewSetFrom([]string{"BB", "CC", "DD"})
+	s3 := s1.Intersection(s2)
+	if !s3.Equals(NewSetFrom([]string{"BB"})) {
+		t.Error(s3)
+	}
+}
+
+func TestSetIntersection3(t *testing.T) {
+	s1 := NewSetFrom([]string{"AA", "BB", "CC"})
+	s2 := NewSetFrom([]string{"BB"})
+	s3 := s1.Intersection(s2)
+	if !s3.Equals(NewSetFrom([]string{"BB"})) {
+		t.Error(s3)
+	}
+}
+
 func TestSetUnion(t *testing.T) {
 	s1 := NewSetFrom([]string{"AA", "BB", "CC"})
 	s2 := NewSetFrom([]string{"BB", "CC", "DD"})
@@ -70,8 +88,10 @@ func TestSetUnion(t *testing.T) {
 func TestSetDifference(t *testing.T) {
 	s1 := NewSetFrom([]string{"AA", "BB", "CC"})
 	s2 := NewSetFrom([]string{"BB", "CC", "DD"})
-	s3 := s1.Difference(s2)
-	if !s3.Equals(NewSetFrom([]string{"AA"})) {
+	if s3 := s1.Difference(s2); !s3.Equals(NewSetFrom([]string{"AA"})) {
+		t.Error(s3)
+	}
+	if s3 := s2.Difference(s1); !s3.Equals(NewSetFrom([]string{"DD"})) {
 		t.Error(s3)
 	}
 }

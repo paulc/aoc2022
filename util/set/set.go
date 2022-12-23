@@ -60,11 +60,20 @@ func (s1 Set[T]) Keys() (out []T) {
 
 func (s1 Set[T]) Intersection(s2 Set[T]) Set[T] {
 	out := NewSet[T]()
-	s1.Apply(func(v T) {
-		if s2.Has(v) {
-			out.Add(v)
-		}
-	})
+	if s1.Len() < s2.Len() {
+		s1.Apply(func(v T) {
+			if s2.Has(v) {
+				out.Add(v)
+			}
+		})
+	} else {
+		s2.Apply(func(v T) {
+			if s1.Has(v) {
+				out.Add(v)
+			}
+		})
+
+	}
 	return out
 }
 
