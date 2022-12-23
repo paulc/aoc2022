@@ -20,10 +20,8 @@ type state struct {
 
 func getBounds(s set.Set[point.Point]) (x0, y0, x1, y1 int) {
 	s.Apply(func(e point.Point) {
-		x0 = util.Min(x0, e.X)
-		y0 = util.Min(y0, e.Y)
-		x1 = util.Max(x1, e.X)
-		y1 = util.Max(y1, e.Y)
+		x0, y0 = util.Min(x0, e.X), util.Min(y0, e.Y)
+		x1, y1 = util.Max(x1, e.X), util.Max(y1, e.Y)
 	})
 	return
 }
