@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/paulc/aoc2022/util"
-	"github.com/paulc/aoc2022/util/grid"
 	"github.com/paulc/aoc2022/util/point"
 	"github.com/paulc/aoc2022/util/reader"
 	"github.com/paulc/aoc2022/util/set"
@@ -27,23 +26,6 @@ func getBounds(s set.Set[point.Point]) (x0, y0, x1, y1 int) {
 		y1 = util.Max(y1, e.Y)
 	})
 	return
-}
-
-type pp bool
-
-func (p pp) String() string {
-	if p {
-		return "#"
-	} else {
-		return "."
-	}
-}
-
-func printmap(s set.Set[point.Point]) string {
-	minX, minY, maxX, maxY := getBounds(s)
-	g, _ := grid.NewGrid[pp](minX, minY, maxX, maxY)
-	s.Apply(func(e point.Point) { g.Set(e, true) })
-	return g.String()
 }
 
 var (
