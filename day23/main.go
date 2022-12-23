@@ -79,49 +79,36 @@ func parseInput(r io.Reader) (out state) {
 }
 
 func empty(elves set.Set[point.Point], e point.Point, d []struct{ dx, dy int }) bool {
-	p := set.NewSet[point.Point]()
 	for _, v := range d {
-		p.Add(point.Point{e.X + v.dx, e.Y + v.dy})
+		if elves.Has(point.Point{e.X + v.dx, e.Y + v.dy}) {
+			return false
+		}
 	}
-	return elves.Intersection(p).Len() == 0
+	return true
 }
 
-func round(in set.Set[point.Point], order []string) (out set.Set[point.Point], done bool) {
-	out = set.NewSet[point.Point]()
+func round(elves set.Set[point.Point], order []string) (done bool) {
 	proposed := make(map[point.Point]point.Point)
 	count := make(map[point.Point]int)
-	for e := range in {
-		if empty(in, e, diag) {
-			out.Add(e)
-		} else {
-			found := false
+	for e := range elves {
+		if !empty(elves, e, diag) {
 			for _, d := range order {
-				if empty(in, e, check[d]) {
+				if empty(elves, e, check[d]) {
 					next := move[d](e)
 					proposed[e] = next
 					count[next] = count[next] + 1
-					found = true
 					break
 				}
 			}
-			if !found {
-				out.Add(e)
-			}
 		}
 	}
-	fmt.Println(">>", out.Len(), len(proposed))
-	if len(proposed) == 0 {
-		done = true
-	} else {
-		for cur, next := range proposed {
-			if count[next] > 1 {
-				out.Add(cur)
-			} else {
-				out.Add(next)
-			}
+	for cur, next := range proposed {
+		if count[next] == 1 {
+			elves.Remove(cur)
+			elves.Add(next)
 		}
 	}
-	return
+	return len(proposed) == 0
 }
 
 func part1(input state) (result int) {
@@ -129,7 +116,7 @@ func part1(input state) (result int) {
 	elves := input.elves.Copy()
 	order := slices.Clone(input.order)
 	for i := 0; i < 10 && !done; i++ {
-		elves, done = round(elves, order)
+		done = round(elves, order)
 		order[0], order[1], order[2], order[3] = order[1], order[2], order[3], order[0]
 	}
 	x0, y0, x1, y1 := getBounds(elves)
@@ -141,7 +128,7 @@ func part2(input state) (result int) {
 	order := slices.Clone(input.order)
 	done := false
 	for !done {
-		elves, done = round(elves, order)
+		done = round(elves, order)
 		order[0], order[1], order[2], order[3] = order[1], order[2], order[3], order[0]
 		result++
 	}
