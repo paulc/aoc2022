@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/paulc/aoc2022/util"
 	"github.com/paulc/aoc2022/util/path"
@@ -68,11 +69,17 @@ func addValve(on, v string) string {
 	return strings.Join(keys, ",")
 }
 
-func best_estimate(input cave, tnow, tmax int, available set.Set[string]) (result int) {
+func best_estimate(input cave, tnow, tmax int, location string, available set.Set[string]) (result int) {
 	rates := []int{}
-	available.Apply(func(s string) { rates = append(rates, input.valveMap[s]) })
+	fastest := tmax
+	available.Apply(func(s string) {
+		rates = append(rates, input.valveMap[s])
+		if c := input.costs[location+s]; c < fastest {
+			fastest = c
+		}
+	})
 	slices.Sort(rates)
-	for tleft := tmax - tnow - 2; tleft > 0; tleft -= 2 {
+	for tleft := tmax - tnow - fastest - 1; tleft > 0; tleft -= 2 {
 		if len(rates) > 0 {
 			result += rates[len(rates)-1] * tleft
 			rates = rates[:len(rates)-1]
@@ -86,7 +93,7 @@ func search(input cave, current state, available set.Set[string], visited set.Se
 	if current.pressure > *best {
 		*best = current.pressure
 	}
-	if current.pressure+best_estimate(input, current.time, tmax, available) > *best {
+	if current.pressure+best_estimate(input, current.time, tmax, current.location, available) > *best {
 		for _, v := range available.Keys() {
 			t := current.time + input.costs[current.location+v] + 1
 			if t < tmax {
@@ -110,26 +117,68 @@ func part1(input cave) (result int) {
 	return best
 }
 
-func part2(input cave) (result int) {
+func calculatePair(input cave, split []string) int {
 	start := state{0, "AA", "", 0}
+	e := set.NewSetFrom(split)
+	p := input.available.Difference(e)
+	best_e := 0
+	best_p := 0
+	visited_e := set.NewSetFrom([]state{start})
+	visited_p := set.NewSetFrom([]state{start})
+
+	search(input, start, e, visited_e, 26, &best_e)
+	search(input, start, p, visited_p, 26, &best_p)
+
+	return best_e + best_p
+}
+
+/* XXX Non threaded XXX
+func part2(input cave) (result int) {
 	split := input.available.Len() / 2
 	keys := input.available.Keys()
 	for i := 1; i <= split; i++ {
 		for _, v := range util.Combinations(keys, i) {
-			e := set.NewSetFrom(v)
-			p := input.available.Difference(e)
-			best_e := 0
-			best_p := 0
-			visited_e := set.NewSetFrom([]state{start})
-			visited_p := set.NewSetFrom([]state{start})
-
-			search(input, start, e, visited_e, 26, &best_e)
-			search(input, start, p, visited_p, 26, &best_p)
-
-			if best_e+best_p > result {
-				result = best_e + best_p
-				fmt.Println(">>", result, p, e)
+			if v := calculatePair(input, v); v > result {
+				result = v
 			}
+		}
+	}
+	return
+}
+*/
+
+func part2(input cave) (result int) {
+
+	split := input.available.Len() / 2
+	keys := input.available.Keys()
+	results := make(chan int)
+	done := make(chan bool)
+	wg := sync.WaitGroup{}
+
+	for i := 1; i <= split; i++ {
+		for _, v := range util.Combinations(keys, i) {
+			wg.Add(1)
+			go func(s []string) {
+				defer wg.Done()
+				results <- calculatePair(input, s)
+			}(v)
+		}
+	}
+
+	go func() {
+		wg.Wait()
+		done <- true
+	}()
+
+	running := true
+	for running {
+		select {
+		case v := <-results:
+			if v > result {
+				result = v
+			}
+		case <-done:
+			running = false
 		}
 	}
 	return
