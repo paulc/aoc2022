@@ -1,7 +1,6 @@
 package main
 
 import (
-	"container/heap"
 	"fmt"
 	"io"
 	"os"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/paulc/aoc2022/util"
 	"github.com/paulc/aoc2022/util/path"
-	"github.com/paulc/aoc2022/util/priqueue"
 	"github.com/paulc/aoc2022/util/reader"
 	"github.com/paulc/aoc2022/util/set"
 	"golang.org/x/exp/slices"
@@ -70,19 +68,40 @@ func addValve(on, v string) string {
 	return strings.Join(keys, ",")
 }
 
+var best = 0
+
+func best_estimate(input cave, tnow, tmax int, available set.Set[string]) (result int) {
+	rates := []int{}
+	available.Apply(func(s string) { rates = append(rates, input.valveMap[s]) })
+	slices.Sort(rates)
+	for tleft := tmax - tnow - 2; tleft > 0; tleft -= 2 {
+		if len(rates) > 0 {
+			result += rates[len(rates)-1] * tleft
+			rates = rates[:len(rates)-1]
+		}
+	}
+	return
+}
+
 func search(input cave, current state, available set.Set[string], visited set.Set[state], tmax int) {
 	visited.Add(current)
-	for _, v := range available.Keys() {
-		t := current.time + input.costs[current.location+v] + 1
-		if t < tmax {
-			next := state{t, v, addValve(current.valvesOn, v), current.pressure + (input.valveMap[v] * (tmax - t))}
-			if !visited.Has(next) {
-				search(input, next, available.Copy().Remove(v), visited, tmax)
+	if current.pressure > best {
+		best = current.pressure
+	}
+	if current.pressure+best_estimate(input, current.time, tmax, available) > best {
+		for _, v := range available.Keys() {
+			t := current.time + input.costs[current.location+v] + 1
+			if t < tmax {
+				next := state{t, v, addValve(current.valvesOn, v), current.pressure + (input.valveMap[v] * (tmax - t))}
+				if !visited.Has(next) {
+					search(input, next, available.Copy().Remove(v), visited, tmax)
+				}
 			}
 		}
 	}
 }
 
+/*
 func split[T comparable](in set.Set[T], n int) (out []struct{ a, b set.Set[T] }) {
 	if n == 1 {
 		keys := in.Keys()
@@ -126,6 +145,7 @@ func search2(input cave, start state, startValves set.Set[string], tmax int) (re
 	}
 	return
 }
+*/
 
 func part1(input cave) (result int) {
 
@@ -133,29 +153,19 @@ func part1(input cave) (result int) {
 	start := state{0, "AA", "", 0}
 	visited.Add(start)
 
+	best = 0
 	search(input, start, input.available, visited, 30)
-
-	out := visited.Keys()
-	slices.SortFunc(out, func(a, b state) bool { return a.pressure < b.pressure })
-
-	return out[len(out)-1].pressure
+	return best
 }
 
 func part2(input cave) (result int) {
-	//start := state{0, "AA", "", 0}
-	// mid := len(input.available) / 2
-	for _, v := range split(input.available, 5) {
-		fmt.Println(v.a.Keys(), v.b.Keys())
-		/*
-			r := search2(input, start, v.a, 26) + search2(input, start, v.b, 26)
-			fmt.Println(v.a.Keys(), v.b.Keys(), r)
-			if r > result {
-				result = r
-				fmt.Println(v.a.Keys(), v.b.Keys(), result)
-			}
-		*/
-	}
-	return
+	visited := set.NewSet[state]()
+	start := state{0, "AA", "", 0}
+	visited.Add(start)
+
+	best = 0
+	search(input, start, input.available, visited, 26)
+	return best
 }
 
 /*
@@ -190,5 +200,11 @@ func part2(input cave) (result int) {
 func main() {
 	input := parseInput(util.Must(os.Open("input")))
 	// fmt.Println("Part1:", part1(input))
+	for i := 0; i < 1000; i++ {
+		if i%100 == 0 {
+			fmt.Println(i)
+		}
+		part2(input)
+	}
 	fmt.Println("Part2:", part2(input))
 }
