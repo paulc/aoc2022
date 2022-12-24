@@ -117,3 +117,20 @@ func Cycle[T any](in []T) <-chan T {
 	}()
 	return out
 }
+
+func Combinations[T any](in []T, r int) (out [][]T) {
+	if r == 0 {
+		return
+	}
+	for i := 0; i < len(in); i++ {
+		if r == 1 {
+			out = append(out, []T{})
+			out[i] = append(out[i], in[i])
+		} else {
+			for _, v := range Combinations(in[i+1:], r-1) {
+				out = append(out, append(v, in[i]))
+			}
+		}
+	}
+	return
+}

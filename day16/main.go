@@ -68,8 +68,6 @@ func addValve(on, v string) string {
 	return strings.Join(keys, ",")
 }
 
-var best = 0
-
 func best_estimate(input cave, tnow, tmax int, available set.Set[string]) (result int) {
 	rates := []int{}
 	available.Apply(func(s string) { rates = append(rates, input.valveMap[s]) })
@@ -83,69 +81,23 @@ func best_estimate(input cave, tnow, tmax int, available set.Set[string]) (resul
 	return
 }
 
-func search(input cave, current state, available set.Set[string], visited set.Set[state], tmax int) {
+func search(input cave, current state, available set.Set[string], visited set.Set[state], tmax int, best *int) {
 	visited.Add(current)
-	if current.pressure > best {
-		best = current.pressure
+	if current.pressure > *best {
+		*best = current.pressure
 	}
-	if current.pressure+best_estimate(input, current.time, tmax, available) > best {
+	if current.pressure+best_estimate(input, current.time, tmax, available) > *best {
 		for _, v := range available.Keys() {
 			t := current.time + input.costs[current.location+v] + 1
 			if t < tmax {
 				next := state{t, v, addValve(current.valvesOn, v), current.pressure + (input.valveMap[v] * (tmax - t))}
 				if !visited.Has(next) {
-					search(input, next, available.Copy().Remove(v), visited, tmax)
+					search(input, next, available.Copy().Remove(v), visited, tmax, best)
 				}
 			}
 		}
 	}
 }
-
-/*
-func split[T comparable](in set.Set[T], n int) (out []struct{ a, b set.Set[T] }) {
-	if n == 1 {
-		keys := in.Keys()
-		for i := 0; i < len(keys); i++ {
-			a := set.NewSetFrom([]T{keys[i]})
-			b := in.Copy().Remove(keys[i])
-			out = append(out, struct{ a, b set.Set[T] }{a, b})
-		}
-		return
-	}
-	for _, v := range split(in, n-1) {
-		for _, v2 := range split(v.b, 1) {
-			a := v.a.Union(v2.a)
-			b := v2.b
-			out = append(out, struct{ a, b set.Set[T] }{a, b})
-		}
-	}
-	return
-}
-
-func search2(input cave, start state, startValves set.Set[string], tmax int) (result int) {
-	q := priqueue.NewPriorityQueue[state](func(s state) float64 { return float64(-s.pressure) })
-	visited := set.NewSetFrom([]state{start})
-	heap.Push(q, start)
-	for q.Len() > 0 {
-		current := heap.Pop(q).(state)
-		if current.pressure > result {
-			result = current.pressure
-		}
-		available := startValves.Difference(set.NewSetFrom(strings.Split(current.valvesOn, ",")))
-		for v := range available {
-			tnext := current.time + input.costs[current.location+v] + 1
-			if tnext < tmax {
-				next := state{tnext, v, addValve(current.valvesOn, v), current.pressure + (input.valveMap[v] * (tmax - tnext))}
-				if !visited.Has(next) {
-					visited.Add(next)
-					heap.Push(q, next)
-				}
-			}
-		}
-	}
-	return
-}
-*/
 
 func part1(input cave) (result int) {
 
@@ -153,58 +105,38 @@ func part1(input cave) (result int) {
 	start := state{0, "AA", "", 0}
 	visited.Add(start)
 
-	best = 0
-	search(input, start, input.available, visited, 30)
+	best := 0
+	search(input, start, input.available, visited, 30, &best)
 	return best
 }
 
 func part2(input cave) (result int) {
-	visited := set.NewSet[state]()
 	start := state{0, "AA", "", 0}
-	visited.Add(start)
+	split := input.available.Len() / 2
+	keys := input.available.Keys()
+	for i := 1; i <= split; i++ {
+		for _, v := range util.Combinations(keys, i) {
+			e := set.NewSetFrom(v)
+			p := input.available.Difference(e)
+			best_e := 0
+			best_p := 0
+			visited_e := set.NewSetFrom([]state{start})
+			visited_p := set.NewSetFrom([]state{start})
 
-	best = 0
-	search(input, start, input.available, visited, 26)
-	return best
-}
+			search(input, start, e, visited_e, 26, &best_e)
+			search(input, start, p, visited_p, 26, &best_p)
 
-/*
-
-	// XXX This doesnt work properly (but does get the right answer) XXX
-
-	visited := set.NewSet[state]()
-	start := state{0, "AA", "", 0}
-	visited.Add(start)
-
-	elephant_avail := input.available.Copy()
-	elephant_visited := visited.Copy()
-	search(input, start, input.available, visited, 26)
-
-	out := visited.Keys()
-	slices.SortFunc(out, func(a, b state) bool { return a.pressure < b.pressure })
-	result = out[len(out)-1].pressure
-
-	done := set.NewSetFrom(strings.Split(out[len(out)-1].valvesOn, ","))
-
-	for k := range done {
-		elephant_avail.Remove(k)
+			if best_e+best_p > result {
+				result = best_e + best_p
+				fmt.Println(">>", result, p, e)
+			}
+		}
 	}
-
-	search(input, start, elephant_avail, elephant_visited, 26)
-
-	elephant_out := elephant_visited.Keys()
-	slices.SortFunc(elephant_out, func(a, b state) bool { return a.pressure < b.pressure })
-	result += elephant_out[len(elephant_out)-1].pressure
-*/
+	return
+}
 
 func main() {
 	input := parseInput(util.Must(os.Open("input")))
-	// fmt.Println("Part1:", part1(input))
-	for i := 0; i < 1000; i++ {
-		if i%100 == 0 {
-			fmt.Println(i)
-		}
-		part2(input)
-	}
+	fmt.Println("Part1:", part1(input))
 	fmt.Println("Part2:", part2(input))
 }
