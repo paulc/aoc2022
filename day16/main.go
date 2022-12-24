@@ -132,21 +132,6 @@ func calculatePair(input cave, split []string) int {
 	return best_e + best_p
 }
 
-/* XXX Non threaded XXX
-func part2(input cave) (result int) {
-	split := input.available.Len() / 2
-	keys := input.available.Keys()
-	for i := 1; i <= split; i++ {
-		for _, v := range util.Combinations(keys, i) {
-			if v := calculatePair(input, v); v > result {
-				result = v
-			}
-		}
-	}
-	return
-}
-*/
-
 func part2(input cave) (result int) {
 
 	split := input.available.Len() / 2
