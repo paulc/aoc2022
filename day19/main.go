@@ -57,12 +57,12 @@ func update(s state) state {
 	return s
 }
 
-type startData struct {
+type puzzle struct {
 	blueprints  []blueprint
 	start_state state
 }
 
-func parseInput(r io.Reader) (out startData) {
+func parseInput(r io.Reader) (out puzzle) {
 	util.Must(reader.LineReader(r, func(s string) error {
 		b := blueprint{}
 		util.Must(fmt.Sscanf(s, "Blueprint %d: Each ore robot costs %d ore. Each clay robot costs %d ore. Each obsidian robot costs %d ore and %d clay. Each geode robot costs %d ore and %d obsidian.", &b.id, &b.costs[ore][ore], &b.costs[clay][ore], &b.costs[obsidian][ore], &b.costs[obsidian][clay], &b.costs[geode][ore], &b.costs[geode][obsidian]))
@@ -122,7 +122,7 @@ func run_blueprint(b blueprint, s state, seen set.Set[state], tmax int, out *[]i
 	}
 }
 
-func part1(input startData) (result int) {
+func part1(input puzzle) (result int) {
 	for _, b := range input.blueprints {
 		out := []int{}
 		run_blueprint(b, input.start_state, set.NewSet[state](), 24, &out)
@@ -132,7 +132,7 @@ func part1(input startData) (result int) {
 	return result
 }
 
-func part2(input startData) (result int) {
+func part2(input puzzle) (result int) {
 	result = 1
 	if len(input.blueprints) > 3 {
 		input.blueprints = input.blueprints[:3]

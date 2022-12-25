@@ -77,7 +77,7 @@ type pos struct {
 	dir  facing
 }
 
-type startData struct {
+type puzzle struct {
 	cave           array.Array[tile]
 	moves          []move
 	start, current pos
@@ -85,12 +85,12 @@ type startData struct {
 }
 
 /*
-func (s startData) String() string {
+func (s puzzle) String() string {
 	return fmt.Sprintf("%s\n\nw=%d h=%d c=(%d,%d) %s\n", s.cave.Copy().Set(s.current.x, s.current.y, 99).String(), s.w, s.h, s.current.x, s.current.y, s.current.dir)
 }
 */
 
-func (s *startData) Move(m move) {
+func (s *puzzle) Move(m move) {
 	if m.turn {
 		if m.direction == "R" {
 			s.current.dir = (s.current.dir + 1) % nFacing
@@ -131,7 +131,7 @@ func (s *startData) Move(m move) {
 	return
 }
 
-func parseInput(r io.Reader) (out startData) {
+func parseInput(r io.Reader) (out puzzle) {
 	head, tail, _ := reader.HeadFunc(r, func(b []byte) bool { return bytes.Equal(b, []byte{'\n'}) }, true)
 	out.cave = util.Must(array.ArrayReader[tile](&head, array.MakeStringSplitter(""), strToTile))
 	re := regexp.MustCompile(`(\d+|[LR])`)
@@ -168,7 +168,7 @@ func parseInput(r io.Reader) (out startData) {
 	return
 }
 
-func part1(input startData) (result int) {
+func part1(input puzzle) (result int) {
 	fmt.Println(input.cave)
 	for _, v := range input.moves {
 		input.Move(v)
@@ -176,7 +176,7 @@ func part1(input startData) (result int) {
 	return (input.current.y+1)*1000 + (input.current.x+1)*4 + int(input.current.dir)
 }
 
-func part2(input startData) (result int) {
+func part2(input puzzle) (result int) {
 	return result
 }
 

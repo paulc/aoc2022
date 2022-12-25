@@ -9,20 +9,21 @@ import (
 	"github.com/paulc/aoc2022/util/reader"
 )
 
-type startData struct {
+type puzzle struct {
 }
 
-func parseInput(r io.Reader) (out startData) {
+func parseInput(r io.Reader) (out puzzle) {
 	util.Must(reader.LineReader(r, func(s string) error {
+		return nil
 	}))
 	return
 }
 
-func part1(input startData) (result int) {
+func part1(input puzzle) (result int) {
 	return result
 }
 
-func part2(input startData) (result int) {
+func part2(input puzzle) (result int) {
 	return result
 }
 

@@ -56,13 +56,13 @@ func (i1 *LL) Remove() *LL {
 	return i1
 }
 
-type startData struct {
+type puzzle struct {
 	head, zero *LL
 	ptr        map[int]*LL
 	length     int
 }
 
-func parseInput(r io.Reader) (out startData) {
+func parseInput(r io.Reader) (out puzzle) {
 	out.ptr = make(map[int]*LL)
 	out.head = &LL{}
 	prev, current := out.head, out.head
@@ -89,7 +89,7 @@ func parseInput(r io.Reader) (out startData) {
 	return
 }
 
-func part1(input startData) (result int) {
+func part1(input puzzle) (result int) {
 	for i := 0; i < input.length; i++ {
 		i1 := input.ptr[i]
 		i2 := i1.Move(i1.val, input.length)
@@ -98,7 +98,7 @@ func part1(input startData) (result int) {
 	return input.zero.MoveN(1000).val + input.zero.MoveN(2000).val + input.zero.MoveN(3000).val
 }
 
-func part2(input startData) (result int) {
+func part2(input puzzle) (result int) {
 	for i := 0; i < input.length; i++ {
 		input.ptr[i].val *= 811589153
 	}

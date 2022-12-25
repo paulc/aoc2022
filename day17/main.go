@@ -10,7 +10,7 @@ import (
 	"github.com/paulc/aoc2022/util"
 )
 
-type startData []byte
+type puzzle []byte
 
 type xy struct{ x, y int }
 
@@ -133,11 +133,11 @@ func (b board) String() string {
 	return strings.Join(out, "\n")
 }
 
-func parseInput(r io.Reader) (out startData) {
+func parseInput(r io.Reader) (out puzzle) {
 	return bytes.TrimSpace(util.Must(io.ReadAll(r)))
 }
 
-func run(input startData, nrocks int) int {
+func run(input puzzle, nrocks int) int {
 	b := board{cache: make(map[signature][2]int)}
 	jets := util.Cycle(input)
 	i, found := 0, false
@@ -165,11 +165,11 @@ func run(input startData, nrocks int) int {
 	return b.top
 }
 
-func part1(input startData) (result int) {
+func part1(input puzzle) (result int) {
 	return run(input, 2022)
 }
 
-func part2(input startData) (result int) {
+func part2(input puzzle) (result int) {
 	return run(input, 1000000000000)
 }
 

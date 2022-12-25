@@ -25,9 +25,9 @@ var fn = map[string]func(a, b int) int{
 	"/": func(a, b int) int { return a / b },
 }
 
-type startData map[string]*node
+type puzzle map[string]*node
 
-func (s startData) Value(id string) int {
+func (s puzzle) Value(id string) int {
 	n := s[id]
 	if !n.hasVal {
 		return n.op(s.Value(n.d1), s.Value(n.d2))
@@ -36,8 +36,8 @@ func (s startData) Value(id string) int {
 	}
 }
 
-func parseInput(r io.Reader) (out startData) {
-	out = make(startData)
+func parseInput(r io.Reader) (out puzzle) {
+	out = make(puzzle)
 	util.Must(reader.LineReader(r, func(s string) error {
 		n := node{}
 		s1 := strings.Split(s, ": ")
@@ -75,11 +75,11 @@ func bsearch(f func(i int) int, start, end, target int) int {
 	}
 }
 
-func part1(input startData) (result int) {
+func part1(input puzzle) (result int) {
 	return input.Value("root")
 }
 
-func part2(input startData) (result int) {
+func part2(input puzzle) (result int) {
 	var f func(i int) int
 	d1 := func(i int) int { input["humn"].val = i; return input.Value(input["root"].d1) }
 	d2 := func(i int) int { input["humn"].val = i; return input.Value(input["root"].d2) }

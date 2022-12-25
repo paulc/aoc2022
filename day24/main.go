@@ -17,7 +17,7 @@ type blizzard struct {
 	dx, dy int
 }
 
-type startData struct {
+type puzzle struct {
 	blizzards  map[point.Point][]blizzard
 	w, h       int
 	start, end point.Point
@@ -57,7 +57,7 @@ func drawBlizzard(blizzards map[point.Point][]blizzard, w, h int) string {
 	return g.String()
 }
 
-func parseInput(r io.Reader) (out startData) {
+func parseInput(r io.Reader) (out puzzle) {
 	out.blizzards = make(map[point.Point][]blizzard)
 	y := 0
 	for _, l := range util.Must(reader.Lines(r)) {
@@ -115,7 +115,7 @@ func options(p point.Point, blizzards map[point.Point][]blizzard, w, h int, star
 	return
 }
 
-func part1(input startData) (result int) {
+func part1(input puzzle) (result int) {
 	current := set.NewSetFrom[point.Point]([]point.Point{{1, 0}})
 	for {
 		result++
@@ -135,7 +135,7 @@ func part1(input startData) (result int) {
 	return result
 }
 
-func part2(input startData) (result int) {
+func part2(input puzzle) (result int) {
 	current := set.NewSetFrom[point.Point]([]point.Point{{1, 0}})
 	target := input.end
 	trips := 0
