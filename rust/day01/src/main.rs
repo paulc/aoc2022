@@ -27,12 +27,10 @@ fn part2(input: &Vec<Vec<i32>>) -> Option<i32> {
 }
 
 fn main() -> std::io::Result<()> {
-
     let mut f = File::open("input")?;
     let data = parse_input(&mut f)?;
     println!("Part1: {:?}",part1(&data).unwrap());
     println!("Part2: {:?}",part2(&data).unwrap());
-
     Ok(())
 }
 
