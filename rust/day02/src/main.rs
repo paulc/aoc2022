@@ -23,13 +23,13 @@ impl TryFrom<&str> for Move {
 }
 
 #[derive(Debug)]
-enum GameResult {
+enum Outcome {
     Lose,
     Draw,
     Win,
 }
 
-impl TryFrom<&str> for GameResult {
+impl TryFrom<&str> for Outcome {
     type Error = &'static str;
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         match s {
@@ -50,7 +50,7 @@ struct Turn {
 #[derive(Debug)]
 struct Turn2 {
     elf_move: Move,
-    result: GameResult,
+    result: Outcome,
 }
 
 
@@ -74,7 +74,7 @@ fn parse_input2(input: &mut impl Read) -> Vec<Turn2> {
         if let Ok(l) = l {
             let split = l.splitn(2," ").collect::<Vec<_>>();
             out.push(Turn2{ elf_move: Move::try_from(split[0]).unwrap(),
-                            result: GameResult::try_from(split[1]).unwrap() });
+                            result: Outcome::try_from(split[1]).unwrap() });
         }
     }
     out
@@ -100,11 +100,11 @@ fn part2(input: &Vec<Turn2>) -> Option<i32> {
     let mut score = 0;
     for turn in input.iter() {
         score += match turn {
-            Turn2{elf_move: elf, result: GameResult::Lose} => 
+            Turn2{elf_move: elf, result: Outcome::Lose} => 
                         match elf { Move::Rock => 3, Move::Paper => 1, Move::Scissors => 2 },
-            Turn2{elf_move: elf, result: GameResult::Draw} => 
+            Turn2{elf_move: elf, result: Outcome::Draw} => 
                         match elf { Move::Rock => 4, Move::Paper => 5, Move::Scissors => 6 },
-            Turn2{elf_move: elf, result: GameResult::Win} => 
+            Turn2{elf_move: elf, result: Outcome::Win} => 
                         match elf { Move::Rock => 8, Move::Paper => 9, Move::Scissors => 7 },
         }
     }
