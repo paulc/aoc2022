@@ -91,7 +91,8 @@ fn part2(input: &Vec<Rucsac>) -> Option<i32> {
     let mut score = 0;
     for g in input.chunks(3) {
         let badge: HashSet<_> = g[0].all.intersection(&(g[1].all)).cloned().collect();
-        score += badge.intersection(&(g[2].all)).fold(0, |acc,i| acc + i.priority);
+        let badge: HashSet<_> = badge.intersection(&g[2].all).cloned().collect();
+        score += badge.iter().fold(0, |acc,i| acc + i.priority);
     }
     Some(score)
 }
