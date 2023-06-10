@@ -45,7 +45,7 @@ impl Rucsac {
 impl TryFrom<&str> for Rucsac {
     type Error = &'static str;
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let mut out = Rucsac::new();
+        let mut out: Rucsac = Rucsac::new();
         for i in s.as_bytes() {
             out.all.insert(Item::try_from(*i)?);
         }
