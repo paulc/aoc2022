@@ -5,15 +5,20 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
 
-#[derive(Debug,Clone,Copy)]
+#[derive(Debug,Clone)]
 struct Range(u32,u32);
 
 impl TryFrom<&str> for Range {
-    type Error = &'static str;
+    type Error = ();
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         match s.split_once('-') {
-            Some((s1,s2)) => Ok(Self(s1.parse::<u32>().unwrap(),s2.parse::<u32>().unwrap())),
-            None => Err("Invalid Range"),
+            Some((s1,s2)) => {
+                match (s1.parse::<u32>(),s2.parse::<u32>()) {
+                    (Ok(i1),Ok(i2)) => Ok(Self(i1,i2)),
+                    _ => Err(())
+                }
+            }
+            None => Err(()),
         }
     }
 }
