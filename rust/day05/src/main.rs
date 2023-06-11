@@ -1,6 +1,4 @@
-
 #![allow(unused)]
-
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
@@ -13,21 +11,16 @@ struct Input {
 
 #[derive(Debug)]
 struct Line(Vec<Option<char>>);
+
 impl TryFrom<String> for Line {
     type Error = ();
     fn try_from(s: String) -> Result<Self, Self::Error> {
-        let mut out: Vec<Option<char>> = Vec::new();
-        let chars: Vec<char> = s.chars().collect();
-        let n = (chars.len()+1)/4;
-        for i in 0..n {
-            let c = chars[(i*4)+1];
-            if c.is_ascii_uppercase() {
-                out.push(Some(c));
-            } else {
-                out.push(None);
-            }
-        }
-        Ok(Line(out))
+        Ok(Line(s.chars()
+                 .skip(1)
+                 .step_by(4)
+                 .map(|c| if c.is_ascii_uppercase() { Some(c) } else { None })
+                 .collect::<Vec<Option<char>>>())
+        )
     }
 }
 
@@ -42,14 +35,14 @@ struct Move {
 impl TryFrom<String> for Move {
     type Error = ();
     fn try_from(s: String) -> Result<Self, Self::Error> {
-        let parts: Vec<&str> = s.split_whitespace().collect();
-        if parts.len() == 6 {
-            match (parts[1].parse::<usize>(),parts[3].parse::<usize>(),parts[5].parse::<usize>()) {
-                (Ok(count),Ok(from),Ok(to)) => Ok(Move{from,to,count}),
-                _ => Err(())
-            }
-        } else {
-            Err(())
+        let m: Vec<Result<usize,_>> = s.split_whitespace()
+                                       .skip(1)
+                                       .step_by(2)
+                                       .map(|c| c.parse::<usize>())
+                                       .collect();
+        match *m.as_slice() {
+            [Ok(count),Ok(from),Ok(to)] => Ok(Move{from,to,count}),
+            _ => Err(())
         }
     }
 }
