@@ -5,40 +5,120 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
 
-#[derive(Debug,Clone)]
-struct Range(u32,u32);
+#[derive(Debug)]
+struct Input {
+    board: Vec<Vec<char>>,
+    moves: Vec<Move>,
+}
 
-impl TryFrom<&str> for Range {
+#[derive(Debug)]
+struct Line(Vec<Option<char>>);
+impl TryFrom<String> for Line {
     type Error = ();
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        match s.split_once('-') {
-            Some((s1,s2)) => {
-                match (s1.parse::<u32>(),s2.parse::<u32>()) {
-                    (Ok(i1),Ok(i2)) => Ok(Self(i1,i2)),
-                    _ => Err(())
-                }
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        let mut out: Vec<Option<char>> = Vec::new();
+        let chars: Vec<char> = s.chars().collect();
+        let n = (chars.len()+1)/4;
+        for i in 0..n {
+            let c = chars[(i*4)+1];
+            if c.is_ascii_uppercase() {
+                out.push(Some(c));
+            } else {
+                out.push(None);
             }
-            None => Err(()),
+        }
+        Ok(Line(out))
+    }
+}
+
+
+#[derive(Debug)]
+struct Move {
+    from: usize,
+    to: usize,
+    count: usize,
+}
+
+impl TryFrom<String> for Move {
+    type Error = ();
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        let parts: Vec<&str> = s.split_whitespace().collect();
+        if parts.len() == 6 {
+            match (parts[1].parse::<usize>(),parts[3].parse::<usize>(),parts[5].parse::<usize>()) {
+                (Ok(count),Ok(from),Ok(to)) => Ok(Move{from,to,count}),
+                _ => Err(())
+            }
+        } else {
+            Err(())
         }
     }
 }
 
-fn parse_input(input: &mut impl Read) -> Vec<Range> {
-    let mut out: Vec<Range> = Vec::new();
+enum State {
+    Stacks,
+    Moves
+}
+
+fn parse_input(input: &mut impl Read) -> Input {
+    let mut out: Input = Input{ board: Vec::new(), moves: Vec::new() };
+    let mut state = State::Stacks;
+    let mut width = 0;
     let reader = BufReader::new(input);
     for l in reader.lines() {
         if let Ok(l) = l {
+            match state {
+                State::Stacks => { 
+                                if l.len() == 0 { 
+                                    state = State::Moves; 
+                                } else {
+                                    let line = Line::try_from(l).unwrap();
+                                    if width == 0 {
+                                        width = line.0.len();
+                                        for i in 0..width {
+                                            out.board.push(Vec::new());
+                                        }
+                                    }
+                                    for i in 0..width {
+                                        if let Some(c) = line.0[i] {
+                                            out.board[i].push(c);
+                                        }
+                                    }
+                                }
+                }
+                State::Moves => { 
+                                  out.moves.push(Move::try_from(l).unwrap());
+                                },
+            }
         }
+    }
+    for s in out.board.iter_mut() {
+        s.reverse()
     }
     out
 }
 
-fn part1(input: &Vec<Range>) -> Option<&str> {
-    Some("")
+fn part1(input: &Input) -> Option<String> {
+    let mut board = input.board.clone();
+    for m in &input.moves {
+        for i in 0..m.count {
+            let c = board[m.from-1].pop().unwrap();
+            board[m.to-1].push(c);
+        }
+    }
+    let out: String  = board.iter_mut().map(|r| r.pop().unwrap()).collect();
+    Some(out)
 }
 
-fn part2(input: &Vec<Range>) -> Option<&str> {
-    Some("")
+fn part2(input: &Input) -> Option<String> {
+    let mut board = input.board.clone();
+    for m in &input.moves {
+        let at = board[m.from-1].len()-m.count;
+        for c in board[m.from-1].split_off(at) {
+            board[m.to-1].push(c);
+        }
+    }
+    let out: String  = board.iter_mut().map(|r| r.pop().unwrap()).collect();
+    Some(out)
 }
 
 fn main() -> std::io::Result<()> {
@@ -51,10 +131,10 @@ fn main() -> std::io::Result<()> {
 
 #[cfg(test)]
 const TESTDATA : &str = "
-    [D]
-[N] [C]
+    [D]    
+[N] [C]    
 [Z] [M] [P]
- 1   2   3
+ 1   2   3 
 
 move 1 from 2 to 1
 move 3 from 1 to 3
@@ -64,13 +144,13 @@ move 1 from 1 to 2
 
 #[test]
 fn test_part1() {
-    let data = parse_input(&mut TESTDATA.trim().as_bytes());
+    let data = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes());
     assert_eq!(part1(&data).unwrap(), "CMZ");
 }
 
 #[test]
 fn test_part2() {
-    let data = parse_input(&mut TESTDATA.trim().as_bytes());
+    let data = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes());
     assert_eq!(part2(&data).unwrap(), "MCD");
 }
 
