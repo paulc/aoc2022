@@ -9,6 +9,9 @@ use std::io::Error;
 use std::io::ErrorKind::InvalidData;
 use std::rc::Rc;
 
+type Out = usize;
+type In = FS;
+
 #[derive(Debug)]
 struct ParseError;
 impl std::error::Error for ParseError {}
@@ -120,7 +123,7 @@ impl FS {
     }
 }
 
-fn parse_input(input: &mut impl Read) -> std::io::Result<FS> {
+fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
     let mut fs = FS::new();
     let mut cwd: usize = fs.root;
     let reader = BufReader::new(input);
@@ -145,20 +148,20 @@ fn parse_input(input: &mut impl Read) -> std::io::Result<FS> {
     Ok(fs)
 }
 
-fn part1(root: &FS) -> Option<usize> {
-    Some(
-        root.dirs
-            .iter()
-            .filter(|d| d.size < 100000)
-            .map(|d| d.size)
-            .sum::<usize>(),
-    )
+fn part1(input: &In) -> Out {
+    input
+        .dirs
+        .iter()
+        .filter(|d| d.size < 100000)
+        .map(|d| d.size)
+        .sum::<usize>()
 }
 
-fn part2(root: &FS) -> Option<usize> {
-    let unused = 70000000 - root.get(root.root).unwrap().size;
+fn part2(input: &In) -> Out {
+    let unused = 70000000 - input.get(input.root).unwrap().size;
     let required = 30000000 - unused;
-    root.dirs
+    input
+        .dirs
         .iter()
         .filter(|d| d.size > required)
         .map(|d| d.size)
@@ -166,14 +169,27 @@ fn part2(root: &FS) -> Option<usize> {
         .iter()
         .min()
         .copied()
+        .unwrap()
 }
 
 fn main() -> std::io::Result<()> {
     let mut f = File::open("input")?;
-    let root = parse_input(&mut f)?;
-    println!("Part1: {:?}", part1(&root).unwrap());
-    println!("Part2: {:?}", part2(&root).unwrap());
+    let input = parse_input(&mut f)?;
+    println!("Part1: {:?}", part1(&input));
+    println!("Part2: {:?}", part2(&input));
     Ok(())
+}
+
+#[test]
+fn test_part1() {
+    let data = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes()).unwrap();
+    assert_eq!(part1(&data), 95437);
+}
+
+#[test]
+fn test_part2() {
+    let data = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes()).unwrap();
+    assert_eq!(part2(&data), 24933642);
 }
 
 #[cfg(test)]
@@ -202,15 +218,3 @@ $ ls
 5626152 d.ext
 7214296 k
 ";
-
-#[test]
-fn test_part1() {
-    let data = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes()).unwrap();
-    assert_eq!(part1(&data).unwrap(), 95437);
-}
-
-#[test]
-fn test_part2() {
-    let data = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes()).unwrap();
-    assert_eq!(part2(&data).unwrap(), 24933642);
-}
