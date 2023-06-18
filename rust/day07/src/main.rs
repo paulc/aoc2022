@@ -58,23 +58,17 @@ impl FS {
         let id = self.dirs.len();
         let new = Dir::new(id, name.clone(), Some(cwd));
         self.dirs.push(new);
-        let cwd = self
-            .dirs
-            .get_mut(cwd)
-            .ok_or(format!("Cant get cwd {}", cwd))?;
+        let cwd = self.get_mut(cwd)?;
         cwd.dirs.insert(name, id);
         Ok(())
     }
     fn add_file(&mut self, cwd: usize, name: String, size: usize) -> Result<(), String> {
-        let cwd = self
-            .dirs
-            .get_mut(cwd)
-            .ok_or(format!("Cant get cwd {}", cwd))?;
+        let cwd = self.get_mut(cwd)?;
         cwd.files.insert(name, size);
         cwd.size += size;
         let mut parent = cwd.parent;
         while let Some(p) = parent {
-            let p = self.dirs.get_mut(p).ok_or(format!("Cant get parent"))?;
+            let p = self.get_mut(p)?; // self.dirs.get_mut(p).ok_or(format!("Cant get parent"))?;
             p.size += size;
             parent = p.parent;
         }
@@ -115,7 +109,7 @@ impl FS {
     }
     fn walk(&self, root: usize) -> Result<Vec<&Dir>, String> {
         let mut out: Vec<&Dir> = Vec::new();
-        let mut cwd = self.get(root)?;
+        let cwd = self.get(root)?;
         out.push(self.get(root)?);
         for (k, v) in cwd.dirs.iter() {
             for d in self.walk(*v)? {
@@ -128,7 +122,6 @@ impl FS {
 
 fn parse_input(input: &mut impl Read) -> std::io::Result<FS> {
     let mut fs = FS::new();
-    // let mut pwd = DirRef::new();
     let mut cwd: usize = fs.root;
     let reader = BufReader::new(input);
     for l in reader.lines() {
@@ -149,24 +142,30 @@ fn parse_input(input: &mut impl Read) -> std::io::Result<FS> {
             };
         }
     }
-    println!("{:#?}", fs.walk(fs.root));
     Ok(fs)
 }
 
 fn part1(root: &FS) -> Option<usize> {
-    println!(
-        "{:?}",
-        root.walk(root.root)
-            .unwrap()
+    Some(
+        root.dirs
             .iter()
-            .map(|d| (d.name.clone(), d.size))
-            .collect::<Vec<(String, usize)>>()
-    );
-    Some(95437)
+            .filter(|d| d.size < 100000)
+            .map(|d| d.size)
+            .sum::<usize>(),
+    )
 }
 
 fn part2(root: &FS) -> Option<usize> {
-    Some(24933642)
+    let unused = 70000000 - root.get(root.root).unwrap().size;
+    let required = 30000000 - unused;
+    root.dirs
+        .iter()
+        .filter(|d| d.size > required)
+        .map(|d| d.size)
+        .collect::<Vec<usize>>()
+        .iter()
+        .min()
+        .copied()
 }
 
 fn main() -> std::io::Result<()> {
