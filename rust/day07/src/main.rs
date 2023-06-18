@@ -10,14 +10,6 @@ use std::io::ErrorKind::InvalidData;
 use std::rc::Rc;
 
 #[derive(Debug)]
-enum Cmd {
-    CdCmd(String),
-    LsCmd,
-    Dir(String),
-    File(String, usize),
-}
-
-#[derive(Debug)]
 struct ParseError;
 impl std::error::Error for ParseError {}
 impl std::fmt::Display for ParseError {
@@ -33,6 +25,7 @@ struct Dir {
     dirs: HashMap<String, usize>,
     files: HashMap<String, usize>,
     parent: Option<usize>,
+    size: usize,
 }
 
 impl Dir {
@@ -43,47 +36,48 @@ impl Dir {
             dirs: HashMap::new(),
             files: HashMap::new(),
             parent,
+            size: 0,
         }
-    }
-}
-
-#[derive(Debug)]
-struct DirRef {
-    dirref: usize,
-}
-
-impl DirRef {
-    fn new() -> Self {
-        Self { dirref: 0 }
-    }
-    fn chdir(&mut self, fs: &FS, name: &str) -> Result<(), String> {
-        self.dirref = fs.chdir(self.dirref, name)?;
-        Ok(())
     }
 }
 
 #[derive(Debug)]
 struct FS {
     dirs: Vec<Dir>,
+    root: usize,
 }
 
 impl FS {
     fn new() -> Self {
         Self {
             dirs: vec![Dir::new(0, "/".to_string(), None)],
+            root: 0,
         }
     }
-    fn add_subdir(&mut self, cwd: usize, name: String) -> Result<(), ()> {
+    fn add_subdir(&mut self, cwd: usize, name: String) -> Result<(), String> {
         let id = self.dirs.len();
         let new = Dir::new(id, name.clone(), Some(cwd));
         self.dirs.push(new);
-        let cwd = self.dirs.get_mut(cwd).unwrap();
+        let cwd = self
+            .dirs
+            .get_mut(cwd)
+            .ok_or(format!("Cant get cwd {}", cwd))?;
         cwd.dirs.insert(name, id);
         Ok(())
     }
-    fn add_file(&mut self, cwd: usize, name: String, size: usize) -> Result<(), ()> {
-        let cwd = self.dirs.get_mut(cwd).ok_or(())?;
+    fn add_file(&mut self, cwd: usize, name: String, size: usize) -> Result<(), String> {
+        let cwd = self
+            .dirs
+            .get_mut(cwd)
+            .ok_or(format!("Cant get cwd {}", cwd))?;
         cwd.files.insert(name, size);
+        cwd.size += size;
+        let mut parent = cwd.parent;
+        while let Some(p) = parent {
+            let p = self.dirs.get_mut(p).ok_or(format!("Cant get parent"))?;
+            p.size += size;
+            parent = p.parent;
+        }
         Ok(())
     }
     fn chdir(&self, cwd: usize, name: &str) -> Result<usize, String> {
@@ -110,21 +104,42 @@ impl FS {
             },
         }
     }
+    fn get(&self, cwd: usize) -> Result<&Dir, String> {
+        Ok(self.dirs.get(cwd).ok_or(format!("Cant get dir: {}", cwd))?)
+    }
+    fn get_mut(&mut self, cwd: usize) -> Result<&mut Dir, String> {
+        Ok(self
+            .dirs
+            .get_mut(cwd)
+            .ok_or(format!("Cant get dir: {}", cwd))?)
+    }
+    fn walk(&self, root: usize) -> Result<Vec<&Dir>, String> {
+        let mut out: Vec<&Dir> = Vec::new();
+        let mut cwd = self.get(root)?;
+        out.push(self.get(root)?);
+        for (k, v) in cwd.dirs.iter() {
+            for d in self.walk(*v)? {
+                out.push(d);
+            }
+        }
+        Ok(out)
+    }
 }
 
 fn parse_input(input: &mut impl Read) -> std::io::Result<FS> {
     let mut fs = FS::new();
-    let mut pwd = DirRef::new();
+    // let mut pwd = DirRef::new();
+    let mut cwd: usize = fs.root;
     let reader = BufReader::new(input);
     for l in reader.lines() {
         if let Ok(l) = l {
             match l.split_whitespace().collect::<Vec<&str>>().as_slice() {
-                ["$", "cd", dir] => pwd.chdir(&fs, dir).unwrap(),
+                ["$", "cd", dir] => cwd = fs.chdir(cwd, dir).unwrap(), // pwd.chdir(&fs, dir).unwrap(),
                 ["$", "ls"] => {}
-                ["dir", dir] => fs.add_subdir(pwd.dirref, dir.to_string()).unwrap(),
+                ["dir", dir] => fs.add_subdir(cwd, dir.to_string()).unwrap(),
                 [size, name] => fs
                     .add_file(
-                        pwd.dirref,
+                        cwd,
                         name.to_string(),
                         size.parse::<usize>()
                             .map_err(|e| Error::new(InvalidData, e))?,
@@ -134,11 +149,19 @@ fn parse_input(input: &mut impl Read) -> std::io::Result<FS> {
             };
         }
     }
-    println!("{:#?}", fs);
+    println!("{:#?}", fs.walk(fs.root));
     Ok(fs)
 }
 
 fn part1(root: &FS) -> Option<usize> {
+    println!(
+        "{:?}",
+        root.walk(root.root)
+            .unwrap()
+            .iter()
+            .map(|d| (d.name.clone(), d.size))
+            .collect::<Vec<(String, usize)>>()
+    );
     Some(95437)
 }
 
