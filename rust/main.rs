@@ -26,11 +26,11 @@ fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
 }
 
 fn part1(input: &In) -> Out {
-    ()
+    PART1_RESULT
 }
 
 fn part2(input: &In) -> Out {
-    ()
+    PART2_RESULT
 }
 
 fn main() -> std::io::Result<()> {
