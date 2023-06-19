@@ -34,18 +34,6 @@ impl Point {
 }
 
 #[derive(Debug, Clone)]
-struct Delta {
-    dx: usize,
-    dy: usize,
-}
-
-impl Delta {
-    fn new(dx: usize, dy: usize) -> Self {
-        Self { dx, dy }
-    }
-}
-
-#[derive(Debug, Clone)]
 struct Tree {
     height: i8,
     visible: bool,
@@ -69,52 +57,44 @@ impl std::fmt::Display for Tree {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+enum Direction {
+    North,
+    South,
+    East,
+    West,
+}
+
 #[derive(Debug, Clone)]
 struct Array2D<T> {
     data: Vec<Vec<T>>,
-    x_min: usize,
-    x_max: usize,
-    y_min: usize,
-    y_max: usize,
-    sep: String,
 }
 
 impl<T: Clone> Array2D<T> {
     fn new(data: Vec<Vec<T>>) -> Self {
         let (x_min, x_max, y_min, y_max) = (0, data[0].len(), 0, data.len());
-        Self {
-            data,
-            x_min,
-            x_max,
-            y_min,
-            y_max,
-            sep: "".to_string(),
+        Self { data }
+    }
+    fn iter(&self) -> Array2DIterator<T> {
+        Array2DIterator {
+            array: self,
+            ix: 0,
+            iy: 0,
         }
     }
-    fn get(&self, p: Point) -> Option<T> {
-        if p.x >= self.x_min && p.x <= self.x_max && p.y >= self.y_min && p.y <= self.y_max {
-            Some(self.data[p.y][p.x].clone())
-        } else {
-            None
+    fn iter_from(&self, from: Point, direction: Direction) -> Array2DDirectionIterator<T> {
+        Array2DDirectionIterator {
+            array: self,
+            direction,
+            ix: from.x,
+            iy: from.y,
         }
+    }
+    fn get(&self, p: Point) -> Option<&T> {
+        self.data.get(p.y).and_then(|r| r.get(p.x))
     }
     fn get_mut(&mut self, p: Point) -> Option<&mut T> {
-        if p.x >= self.x_min && p.x <= self.x_max && p.y >= self.y_min && p.y <= self.y_max {
-            self.data.get_mut(p.y).and_then(|r| r.get_mut(p.x))
-        } else {
-            None
-        }
-    }
-    fn move_point(&self, p: Point, d: Delta) -> Option<Point> {
-        let p = Point {
-            x: p.x + d.dx,
-            y: p.y + d.dy,
-        };
-        if p.x >= self.x_min && p.x <= self.x_max && p.y >= self.y_min && p.y <= self.y_max {
-            Some(p)
-        } else {
-            None
-        }
+        self.data.get_mut(p.y).and_then(|r| r.get_mut(p.x))
     }
 }
 
@@ -128,10 +108,70 @@ impl<T: std::fmt::Display> std::fmt::Display for Array2D<T> {
                     .iter()
                     .map(|e| e.to_string())
                     .collect::<Vec<String>>()
-                    .join(&self.sep)
+                    .join(" ")
             )?
         }
         Ok(())
+    }
+}
+
+struct Array2DDirectionIterator<'a, T> {
+    array: &'a Array2D<T>,
+    direction: Direction,
+    ix: usize,
+    iy: usize,
+}
+
+impl<'a, T> Iterator for Array2DDirectionIterator<'a, T> {
+    type Item = (&'a T, usize, usize);
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.direction {
+            Direction::North => {
+                if self.iy == 0 {
+                    return None;
+                } else {
+                    self.iy -= 1
+                }
+            }
+            Direction::South => self.iy += 1,
+            Direction::East => self.ix += 1,
+            Direction::West => {
+                if self.ix == 0 {
+                    return None;
+                } else {
+                    self.ix -= 1
+                }
+            }
+        }
+        self.array
+            .data
+            .get(self.iy)
+            .and_then(|r| r.get(self.ix).and_then(|c| Some((c, self.ix, self.iy))))
+    }
+}
+
+struct Array2DIterator<'a, T> {
+    array: &'a Array2D<T>,
+    ix: usize,
+    iy: usize,
+}
+
+impl<'a, T> Iterator for Array2DIterator<'a, T> {
+    type Item = (&'a T, usize, usize);
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.iy < self.array.data.len() {
+            if self.ix < self.array.data[self.iy].len() {
+                let item = (&self.array.data[self.iy][self.ix], self.ix, self.iy);
+                self.ix += 1;
+                Some(item)
+            } else {
+                self.ix = 0;
+                self.iy += 1;
+                self.next()
+            }
+        } else {
+            None
+        }
     }
 }
 
@@ -195,7 +235,32 @@ fn part1(input: &mut In) -> Out {
 }
 
 fn part2(input: &mut In) -> Out {
-    PART2_RESULT
+    let mut max: usize = 0;
+    for (t, tx, ty) in input.iter() {
+        let mut view = [0, 0, 0, 0];
+        for direction in [
+            Direction::North,
+            Direction::South,
+            Direction::East,
+            Direction::West,
+        ] {
+            for (v, vx, vy) in input.iter_from(Point::new(tx, ty), direction) {
+                view[direction as usize] += 1;
+                if t.height <= v.height {
+                    break;
+                }
+            }
+            // If any of the views is zero we can break
+            if view[direction as usize] == 0 {
+                break;
+            }
+        }
+        let view = view.iter().fold(1_usize, |acc, &v| acc * v);
+        if view > max {
+            max = view;
+        }
+    }
+    max
 }
 
 fn main() -> std::io::Result<()> {
