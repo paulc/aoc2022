@@ -47,14 +47,14 @@ fn main() -> std::io::Result<()> {
 
 #[test]
 fn test_part1() {
-    let data = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes()).unwrap();
-    assert_eq!(part1(&data), PART1_RESULT);
+    let input = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes()).unwrap();
+    assert_eq!(part1(&input), PART1_RESULT);
 }
 
 #[test]
 fn test_part2() {
-    let data = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes()).unwrap();
-    assert_eq!(part2(&data), PART2_RESULT);
+    let input = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes()).unwrap();
+    assert_eq!(part2(&input), PART2_RESULT);
 }
 
 #[cfg(test)]
