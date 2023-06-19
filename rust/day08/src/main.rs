@@ -108,7 +108,7 @@ impl<T: std::fmt::Display> std::fmt::Display for Array2D<T> {
                     .iter()
                     .map(|e| e.to_string())
                     .collect::<Vec<String>>()
-                    .join(" ")
+                    .join("")
             )?
         }
         Ok(())
