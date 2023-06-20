@@ -22,38 +22,11 @@ impl std::fmt::Display for ParseError {
 }
 
 #[derive(Debug, Clone)]
-struct Point {
-    x: usize,
-    y: usize,
-}
-
-impl Point {
-    fn new(x: usize, y: usize) -> Self {
-        Self { x, y }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct Tree {
-    height: i8,
-    visible: bool,
-}
-
-impl Tree {
-    fn new(height: i8) -> Self {
-        Self {
-            height,
-            visible: false,
-        }
-    }
-}
+struct Tree(i8);
 
 impl std::fmt::Display for Tree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.visible {
-            true => write!(f, "{}* ", self.height),
-            false => write!(f, "{}  ", self.height),
-        }
+        write!(f, "{} ", self.0)
     }
 }
 
@@ -65,36 +38,52 @@ enum Direction {
     West,
 }
 
+impl Direction {
+    fn all() -> [Direction; 4] {
+        [
+            Direction::North,
+            Direction::South,
+            Direction::East,
+            Direction::West,
+        ]
+    }
+}
+
 #[derive(Debug, Clone)]
 struct Array2D<T> {
     data: Vec<Vec<T>>,
 }
 
-impl<T: Clone> Array2D<T> {
+impl<T> Array2D<T> {
     fn new(data: Vec<Vec<T>>) -> Self {
         let (x_min, x_max, y_min, y_max) = (0, data[0].len(), 0, data.len());
         Self { data }
     }
-    fn iter(&self) -> Array2DIterator<T> {
-        Array2DIterator {
-            array: self,
-            ix: 0,
-            iy: 0,
-        }
+    fn get(&self, (x, y): (usize, usize)) -> Option<&T> {
+        self.data.get(y).and_then(|r| r.get(x))
     }
-    fn iter_from(&self, from: Point, direction: Direction) -> Array2DDirectionIterator<T> {
-        Array2DDirectionIterator {
+    fn get_mut(&mut self, (x, y): (usize, usize)) -> Option<&mut T> {
+        self.data.get_mut(y).and_then(|r| r.get_mut(x))
+    }
+    fn iter(&self) -> impl Iterator<Item = (&T, usize, usize)> {
+        self.data
+            .iter()
+            .enumerate()
+            .flat_map(|(y, r)| r.iter().enumerate().map(move |(x, c)| (c, x, y)))
+    }
+    fn iter_mut(&mut self) -> impl Iterator<Item = (&mut T, usize, usize)> {
+        self.data
+            .iter_mut()
+            .enumerate()
+            .flat_map(|(y, r)| r.iter_mut().enumerate().map(move |(x, c)| (c, x, y)))
+    }
+    fn iter_direction(&self, (x, y): (usize, usize), direction: Direction) -> IterDirection<T> {
+        IterDirection {
             array: self,
             direction,
-            ix: from.x,
-            iy: from.y,
+            ix: x,
+            iy: y,
         }
-    }
-    fn get(&self, p: Point) -> Option<&T> {
-        self.data.get(p.y).and_then(|r| r.get(p.x))
-    }
-    fn get_mut(&mut self, p: Point) -> Option<&mut T> {
-        self.data.get_mut(p.y).and_then(|r| r.get_mut(p.x))
     }
 }
 
@@ -115,14 +104,14 @@ impl<T: std::fmt::Display> std::fmt::Display for Array2D<T> {
     }
 }
 
-struct Array2DDirectionIterator<'a, T> {
+struct IterDirection<'a, T> {
     array: &'a Array2D<T>,
     direction: Direction,
     ix: usize,
     iy: usize,
 }
 
-impl<'a, T> Iterator for Array2DDirectionIterator<'a, T> {
+impl<'a, T> Iterator for IterDirection<'a, T> {
     type Item = (&'a T, usize, usize);
     fn next(&mut self) -> Option<Self::Item> {
         match self.direction {
@@ -150,31 +139,6 @@ impl<'a, T> Iterator for Array2DDirectionIterator<'a, T> {
     }
 }
 
-struct Array2DIterator<'a, T> {
-    array: &'a Array2D<T>,
-    ix: usize,
-    iy: usize,
-}
-
-impl<'a, T> Iterator for Array2DIterator<'a, T> {
-    type Item = (&'a T, usize, usize);
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.iy < self.array.data.len() {
-            if self.ix < self.array.data[self.iy].len() {
-                let item = (&self.array.data[self.iy][self.ix], self.ix, self.iy);
-                self.ix += 1;
-                Some(item)
-            } else {
-                self.ix = 0;
-                self.iy += 1;
-                self.next()
-            }
-        } else {
-            None
-        }
-    }
-}
-
 fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
     let reader = BufReader::new(input);
     Ok(Array2D::new(
@@ -185,7 +149,7 @@ fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
                     l.into_bytes()
                         .iter()
                         .map(|b| match b {
-                            b'0'..=b'9' => Ok(Tree::new((b - b'0') as i8)),
+                            b'0'..=b'9' => Ok(Tree((b - b'0') as i8)),
                             _ => Err(Error::new(
                                 InvalidData,
                                 ParseError(format!("Invalid digit: {}", char::from(*b))),
@@ -198,55 +162,40 @@ fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
     ))
 }
 
-fn part1(input: &mut In) -> Out {
-    let mut count = 0;
-    let mut check = |t: &mut Tree, max: i8| -> i8 {
-        if t.height > max {
-            if !t.visible {
-                t.visible = true;
-                count += 1;
-            }
-            t.height
-        } else {
-            max
-        }
-    };
-    for y in 0..input.data.len() {
-        let mut max: i8 = -1;
-        for x in 0..input.data[y].len() {
-            max = check(input.get_mut(Point::new(x, y)).unwrap(), max);
-        }
-        let mut max: i8 = -1;
-        for x in (0..input.data[y].len()).rev() {
-            max = check(input.get_mut(Point::new(x, y)).unwrap(), max);
-        }
-    }
-    for x in 0..input.data[0].len() {
-        let mut max: i8 = -1;
-        for y in 0..input.data.len() {
-            max = check(input.get_mut(Point::new(x, y)).unwrap(), max);
-        }
-        let mut max: i8 = -1;
-        for y in (0..input.data.len()).rev() {
-            max = check(input.get_mut(Point::new(x, y)).unwrap(), max);
-        }
-    }
-    count
+fn part1(input: &In) -> Out {
+    input
+        .iter()
+        .map(|(t, x, y)| {
+            // For each tree
+            Direction::all()
+                .iter() // For each direction
+                .map(|&d| {
+                    input
+                        .iter_direction((x, y), d)
+                        .map(|(t, _, _)| t.0)
+                        .max() // Get the max tree height
+                        .map(|max| t.0 > max) // Check if we can see over
+                        .unwrap_or(true) // If None we are at edge do return true
+                })
+                .collect::<Vec<bool>>()
+                .iter()
+                .any(|&v| v) // Visible if any direction true
+        })
+        .filter(|&v| v) // Filter visible and count
+        .count()
 }
 
-fn part2(input: &mut In) -> Out {
+fn part2(input: &In) -> Out {
     let mut max: usize = 0;
     for (t, tx, ty) in input.iter() {
+        // For each tree
         let mut view = [0, 0, 0, 0];
-        for direction in [
-            Direction::North,
-            Direction::South,
-            Direction::East,
-            Direction::West,
-        ] {
-            for (v, vx, vy) in input.iter_from(Point::new(tx, ty), direction) {
-                view[direction as usize] += 1;
-                if t.height <= v.height {
+        for direction in Direction::all() {
+            // For each direction
+            for (v, vx, vy) in input.iter_direction((tx, ty), direction) {
+                view[direction as usize] += 1; // Increment view length
+                if t.0 <= v.0 {
+                    // if tree height greater
                     break;
                 }
             }
@@ -265,9 +214,9 @@ fn part2(input: &mut In) -> Out {
 
 fn main() -> std::io::Result<()> {
     let mut f = File::open("input")?;
-    let mut input = parse_input(&mut f)?;
-    println!("Part1: {:?}", part1(&mut input.clone()));
-    println!("Part2: {:?}", part2(&mut input));
+    let input = parse_input(&mut f)?;
+    println!("Part1: {:?}", part1(&input));
+    println!("Part2: {:?}", part2(&input));
     Ok(())
 }
 
