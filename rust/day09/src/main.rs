@@ -22,6 +22,7 @@ enum Direction {
     Up,
     Down,
 }
+
 #[derive(Debug)]
 struct Move {
     d: Direction,
@@ -110,6 +111,7 @@ impl Rope {
                     self.knots[i] = self.knots[i].add(&offset);
                 }
             }
+            // Mark where tail visits
             self.visited.insert(self.knots[self.knots.len() - 1]);
         }
     }
