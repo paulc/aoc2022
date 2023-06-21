@@ -1,6 +1,5 @@
 #![allow(unused)]
 
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -32,19 +31,19 @@ impl std::fmt::Display for Tree {
 
 #[derive(Debug, Clone, Copy)]
 enum Direction {
-    North,
-    South,
-    East,
-    West,
+    Up,
+    Down,
+    Right,
+    Left,
 }
 
 impl Direction {
     fn all() -> [Direction; 4] {
         [
-            Direction::North,
-            Direction::South,
-            Direction::East,
-            Direction::West,
+            Direction::Up,
+            Direction::Down,
+            Direction::Right,
+            Direction::Left,
         ]
     }
 }
@@ -115,16 +114,16 @@ impl<'a, T> Iterator for IterDirection<'a, T> {
     type Item = (&'a T, usize, usize);
     fn next(&mut self) -> Option<Self::Item> {
         match self.direction {
-            Direction::North => {
+            Direction::Up => {
                 if self.iy == 0 {
                     return None;
                 } else {
                     self.iy -= 1
                 }
             }
-            Direction::South => self.iy += 1,
-            Direction::East => self.ix += 1,
-            Direction::West => {
+            Direction::Down => self.iy += 1,
+            Direction::Right => self.ix += 1,
+            Direction::Left => {
                 if self.ix == 0 {
                     return None;
                 } else {
@@ -175,7 +174,7 @@ fn part1(input: &In) -> Out {
                         .map(|(t, _, _)| t.0)
                         .max() // Get the max tree height
                         .map(|max| t.0 > max) // Check if we can see over
-                        .unwrap_or(true) // If None we are at edge do return true
+                        .unwrap_or(true) // If None we are at edge so return true
                 })
                 .collect::<Vec<bool>>()
                 .iter()
@@ -192,7 +191,7 @@ fn part2(input: &In) -> Out {
         let mut view = [0, 0, 0, 0];
         for direction in Direction::all() {
             // For each direction
-            for (v, vx, vy) in input.iter_direction((tx, ty), direction) {
+            for (v, _, _) in input.iter_direction((tx, ty), direction) {
                 view[direction as usize] += 1; // Increment view length
                 if t.0 <= v.0 {
                     // if tree height greater
