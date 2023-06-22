@@ -13,12 +13,12 @@ use std::io::ErrorKind::InvalidData;
 type In = Vec<Monkey>;
 type Out = usize;
 const PART1_RESULT: Out = 10605;
-const PART2_RESULT: Out = 0;
+const PART2_RESULT: Out = 2713310158;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Monkey {
     inspected: usize,
-    items: Vec<i32>,
+    items: Vec<i64>,
     op: Option<Op>,
     test: Option<Test>,
     throw: (usize, usize),
@@ -26,14 +26,14 @@ struct Monkey {
 
 #[derive(Debug, Copy, Clone)]
 enum Op {
-    Plus(i32),
-    Mul(i32),
+    Plus(i64),
+    Mul(i64),
     Sqr,
 }
 
 #[derive(Debug, Copy, Clone)]
 enum Test {
-    Div(i32),
+    Div(i64),
 }
 
 impl TryFrom<&str> for Monkey {
@@ -46,8 +46,8 @@ impl TryFrom<&str> for Monkey {
             test: None,
             throw: (0, 0),
         };
-        fn parse_i32(s: &str) -> std::io::Result<i32> {
-            s.parse::<i32>().map_err(|e| Error::new(InvalidData, s))
+        fn parse_i64(s: &str) -> std::io::Result<i64> {
+            s.parse::<i64>().map_err(|e| Error::new(InvalidData, s))
         }
         fn parse_throw(s: &str) -> std::io::Result<usize> {
             match s.split_whitespace().last() {
@@ -63,19 +63,19 @@ impl TryFrom<&str> for Monkey {
                 Some(("Starting items", i)) => {
                     m.items = i
                         .split(", ")
-                        .map(|s| parse_i32(s))
-                        .collect::<Result<Vec<i32>, _>>()?;
+                        .map(|s| parse_i64(s))
+                        .collect::<Result<Vec<i64>, _>>()?;
                 }
                 Some(("Operation", op)) => {
                     match op.split_whitespace().collect::<Vec<_>>().as_slice() {
                         ["new", "=", "old", "*", "old"] => m.op = Some(Op::Sqr),
-                        ["new", "=", "old", "*", n] => m.op = Some(Op::Mul(parse_i32(n)?)),
-                        ["new", "=", "old", "+", n] => m.op = Some(Op::Plus(parse_i32(n)?)),
+                        ["new", "=", "old", "*", n] => m.op = Some(Op::Mul(parse_i64(n)?)),
+                        ["new", "=", "old", "+", n] => m.op = Some(Op::Plus(parse_i64(n)?)),
                         _ => return Err(Error::new(InvalidData, l)),
                     }
                 }
                 Some(("Test", t)) => match t.split_whitespace().collect::<Vec<_>>().as_slice() {
-                    ["divisible", "by", n] => m.test = Some(Test::Div(parse_i32(n)?)),
+                    ["divisible", "by", n] => m.test = Some(Test::Div(parse_i64(n)?)),
                     _ => return Err(Error::new(InvalidData, l)),
                 },
                 Some(("If true", s)) => m.throw.0 = parse_throw(s)?,
@@ -96,47 +96,62 @@ fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
         .collect::<std::io::Result<Vec<_>>>()
 }
 
+fn shuffle(input: &mut In, div: i64, lcm: i64) {
+    for i in 0..input.len() {
+        let mut throw: Vec<(i64, usize)> = Vec::new();
+        let mut monkey = &mut input[i];
+        while let Some(i) = monkey.items.pop() {
+            let new = (match monkey.op.unwrap() {
+                Op::Sqr => i * i,
+                Op::Mul(n) => i * n,
+                Op::Plus(n) => i + n,
+            } / div)
+                % lcm;
+            let dest = match monkey.test.unwrap() {
+                Test::Div(n) => {
+                    if new % n == 0 {
+                        monkey.throw.0
+                    } else {
+                        monkey.throw.1
+                    }
+                }
+            };
+            throw.push((new, dest));
+            monkey.inspected += 1;
+        }
+        for (new, dest) in throw {
+            input[dest].items.push(new);
+        }
+    }
+}
+
 fn part1(input: &mut In) -> Out {
     for round in 0..20 {
-        for i in 0..input.len() {
-            let mut throw: Vec<(i32, usize)> = Vec::new();
-            let mut monkey = &mut input[i];
-            while let Some(i) = monkey.items.pop() {
-                let new = match monkey.op.unwrap() {
-                    Op::Sqr => i * i,
-                    Op::Mul(n) => i * n,
-                    Op::Plus(n) => i + n,
-                } / 3;
-                let dest = match monkey.test.unwrap() {
-                    Test::Div(n) => {
-                        if new % n == 0 {
-                            monkey.throw.0
-                        } else {
-                            monkey.throw.1
-                        }
-                    }
-                };
-                throw.push((new, dest));
-                monkey.inspected += 1;
-            }
-            for (new, dest) in throw {
-                input[dest].items.push(new);
-            }
-        }
+        shuffle(input, 3, i64::MAX);
     }
     input.sort_by_key(|m| m.inspected);
     input[input.len() - 2].inspected * input[input.len() - 1].inspected
 }
 
-fn part2(input: &In) -> Out {
-    PART2_RESULT
+fn part2(input: &mut In) -> Out {
+    let mut lcm: i64 = 1;
+    for m in input.iter() {
+        lcm *= match m.test.unwrap() {
+            Test::Div(n) => n,
+        }
+    }
+    for round in 0..10000 {
+        shuffle(input, 1, lcm);
+    }
+    input.sort_by_key(|m| m.inspected);
+    input[input.len() - 2].inspected * input[input.len() - 1].inspected
 }
 
 fn main() -> std::io::Result<()> {
     let mut f = File::open("input")?;
     let mut input = parse_input(&mut f)?;
-    println!("Part1: {:?}", part1(&mut input));
-    println!("Part2: {:?}", part2(&input));
+    println!("Part1: {:?}", part1(&mut input.clone()));
+    println!("Part2: {:?}", part2(&mut input));
     Ok(())
 }
 
@@ -148,8 +163,8 @@ fn test_part1() {
 
 #[test]
 fn test_part2() {
-    let input = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes()).unwrap();
-    assert_eq!(part2(&input), PART2_RESULT);
+    let mut input = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes()).unwrap();
+    assert_eq!(part2(&mut input), PART2_RESULT);
 }
 
 #[cfg(test)]
