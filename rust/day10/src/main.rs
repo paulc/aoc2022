@@ -97,6 +97,55 @@ impl CPU {
             }
         }
     }
+    fn run_iter<'a>(&'a mut self, code: std::slice::Iter<'a, Opcode>) -> CpuIter<'a> {
+        CpuIter {
+            cpu: self,
+            acc: None,
+            code,
+            state: CpuState::Next,
+        }
+    }
+}
+
+#[derive(Debug)]
+enum CpuState {
+    Next,
+    Wait,
+}
+
+#[derive(Debug)]
+struct CpuIter<'a> {
+    cpu: &'a mut CPU,
+    acc: Option<i32>,
+    code: std::slice::Iter<'a, Opcode>,
+    state: CpuState,
+}
+
+impl<'a> Iterator for CpuIter<'a> {
+    type Item = (i32, i32);
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.state {
+            CpuState::Next => {
+                if let Some(a) = self.acc {
+                    self.cpu.x += a;
+                    self.acc = None;
+                }
+                match self.code.next() {
+                    Some(Opcode::NOOP) => {}
+                    Some(Opcode::ADDX(n)) => {
+                        self.state = CpuState::Wait;
+                        self.acc = Some(n.clone());
+                    }
+                    None => return None,
+                }
+            }
+            CpuState::Wait => {
+                self.state = CpuState::Next;
+            }
+        }
+        self.cpu.cycle += 1;
+        Some((self.cpu.cycle, self.cpu.x))
+    }
 }
 
 fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
@@ -105,6 +154,30 @@ fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
         .map(|l| Opcode::try_from(l?.as_str()))
         .collect::<std::io::Result<In>>()
 }
+
+fn part1(input: &In) -> Out {
+    let mut cpu = CPU::new();
+    cpu.run_iter(input.iter())
+        .skip(19)
+        .step_by(40)
+        .map(|(c, x)| c * x)
+        .sum::<i32>()
+}
+
+fn part2(input: &In) -> Out2 {
+    let mut cpu = CPU::new();
+    let mut crt = CRT::new();
+    cpu.run_iter(input.iter()).for_each(|(cycle, x)| {
+        let pos = cycle - 1;
+        if (pos % 40) >= x - 1 && (pos % 40) <= x + 1 {
+            crt.0[pos as usize] = true;
+        }
+    });
+    crt.to_string()
+}
+
+/*
+ * CALLBACK VERSION
 
 fn part1(input: &In) -> Out {
     let mut result = 0;
@@ -134,6 +207,7 @@ fn part2(input: &In) -> Out2 {
     }
     crt.to_string()
 }
+*/
 
 fn main() -> std::io::Result<()> {
     let mut f = File::open("input")?;

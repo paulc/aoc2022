@@ -3,6 +3,7 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::fmt::Display;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -13,6 +14,21 @@ type In = Vec<()>;
 type Out = usize;
 const PART1_RESULT: Out = 0;
 const PART2_RESULT: Out = 0;
+
+/*
+impl TryFrom<&str> for ____ {
+    type Error = std::io::Error;
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        Err(Error::new(InvalidData, "Error")),
+    }
+}
+
+impl Display for ____ {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f,"{}",____)
+    }
+}
+*/
 
 fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
     BufReader::new(input)
