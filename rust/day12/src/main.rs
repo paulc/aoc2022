@@ -1,71 +1,283 @@
 #![allow(unused)]
 
 use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::collections::HashSet;
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fmt::Display;
 use std::fs::File;
+use std::hash::Hash;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::Error;
 use std::io::ErrorKind::InvalidData;
 
 type In = Hill;
-type Out = usize;
-const PART1_RESULT: Out = 0;
-const PART2_RESULT: Out = 0;
+type Out = f64;
+const PART1_RESULT: Out = 31.0;
+const PART2_RESULT: Out = 29.0;
+
+// =========== XY ===========
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+struct XY {
+    x: i32,
+    y: i32,
+}
+
+impl XY {
+    fn new(x: i32, y: i32) -> XY {
+        XY { x, y }
+    }
+    fn adjacent(&self) -> [XY; 4] {
+        [
+            XY::new(self.x, self.y - 1),
+            XY::new(self.x + 1, self.y),
+            XY::new(self.x, self.y + 1),
+            XY::new(self.x - 1, self.y),
+        ]
+    }
+}
+
+impl std::fmt::Display for XY {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({},{})", self.x, self.y)
+    }
+}
+
+// =========== Grid ===========
+
+#[derive(Debug)]
+struct Grid<T>(Vec<Vec<T>>);
+
+impl<T> Grid<T> {
+    fn check_bounds(&self, p: XY) -> bool {
+        (p.y >= 0 && p.y < self.0.len() as i32)
+            && ((self.0.len() > 0) && (p.x >= 0 && p.x < self.0[0].len() as i32))
+    }
+    fn get(&self, p: XY) -> Option<&T> {
+        match self.check_bounds(p) {
+            true => Some(&self.0[p.y as usize][p.x as usize]),
+            false => None,
+        }
+    }
+    fn adjacent(&self, p: XY) -> Vec<(&T, XY)> {
+        p.adjacent()
+            .into_iter()
+            .filter(|&p| self.check_bounds(p))
+            .map(|p| (&self.0[p.y as usize][p.x as usize], p))
+            .collect()
+    }
+    fn iter(&self) -> impl Iterator<Item = (&T, XY)> {
+        self.0.iter().enumerate().flat_map(|(y, r)| {
+            r.iter()
+                .enumerate()
+                .map(move |(x, c)| (c, XY::new(x as i32, y as i32)))
+        })
+    }
+}
+
+impl<T: std::fmt::Display> std::fmt::Display for Grid<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for y in 0..self.0.len() {
+            writeln!(
+                f,
+                "{}",
+                self.0[y]
+                    .iter()
+                    .map(|e| format!("{e:>2}"))
+                    .collect::<Vec<String>>()
+                    .join(" ")
+            )?
+        }
+        Ok(())
+    }
+}
+// =========== Edge ===========
+
+#[derive(Debug)]
+struct Edge<T> {
+    to: T,
+    cost: f64,
+}
+
+impl<T: std::fmt::Display> std::fmt::Display for Edge<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{:.1}", self.to, self.cost)
+    }
+}
+
+// =========== Graph ===========
+
+#[derive(Debug)]
+struct Graph<T>(HashMap<T, Vec<Edge<T>>>);
+
+impl<T: Eq + Hash> Graph<T> {
+    fn new() -> Self {
+        Self(HashMap::new())
+    }
+    fn add_edge(&mut self, from: T, to: T, cost: f64) {
+        self.0
+            .entry(from)
+            .or_insert(Vec::new())
+            .push(Edge { to, cost });
+    }
+}
+
+impl<T: Ord + std::fmt::Display> std::fmt::Display for Graph<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut keys = self.0.iter().collect::<Vec<_>>();
+        keys.sort_by_key(|(k, _)| k.clone());
+        for (k, v) in keys {
+            writeln!(
+                f,
+                "{} -> {}",
+                k,
+                v.iter()
+                    .map(|e| e.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )?;
+        }
+        Ok(())
+    }
+}
+
+// =========== Cost ===========
+
+#[derive(Debug, Copy, Clone)]
+struct Cost<T> {
+    p: T,
+    cost: f64,
+}
+
+impl<T> PartialEq for Cost<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.cost.eq(&other.cost)
+    }
+}
+
+impl<T> Eq for Cost<T> {}
+
+impl<T> PartialOrd for Cost<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.cost.partial_cmp(&other.cost)
+    }
+}
+
+impl<T: Eq> Ord for Cost<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap_or(Ordering::Equal)
+    }
+}
+
+// =========== Astar ===========
+
+fn astar<T: Ord + Clone + Eq + Hash + std::fmt::Debug>(
+    graph: &Graph<T>,
+    start: T,
+    end: T,
+    h: fn(&T) -> f64,
+) -> Option<f64> {
+    let mut open_set: BinaryHeap<Cost<T>> = BinaryHeap::new();
+    open_set.push(Cost {
+        p: start.clone(),
+        cost: h(&start),
+    });
+    let mut came_from: HashMap<T, T> = HashMap::new();
+    let mut g_score: HashMap<T, f64> = HashMap::new();
+    g_score.insert(start.clone(), 0.0);
+    let mut f_score: HashMap<T, f64> = HashMap::new();
+    f_score.insert(start.clone(), h(&start));
+    while !open_set.is_empty() {
+        if let Some(current) = open_set.pop() {
+            if current.p == end {
+                break;
+            }
+            if let Some(neighbours) = graph.0.get(&current.p) {
+                for neighbour in neighbours {
+                    let tentative_g_score =
+                        g_score.get(&current.p).unwrap_or(&f64::INFINITY) + neighbour.cost;
+                    /*
+                        println!(
+                            ">> Neighbour: {:?} tentative_g_score={} current_g_score[neighbour]={:?}",
+                            neighbour,
+                            tentative_g_score,
+                            g_score.get(&neighbour.to).unwrap_or(&f64::INFINITY)
+                        );
+                    */
+                    if tentative_g_score < *g_score.get(&neighbour.to).unwrap_or(&f64::INFINITY) {
+                        came_from.insert(neighbour.to.clone(), current.p.clone());
+                        g_score.insert(neighbour.to.clone(), tentative_g_score.clone());
+                        let neighbour_f_score = tentative_g_score + h(&neighbour.to);
+                        f_score.insert(neighbour.to.clone(), neighbour_f_score.clone());
+                        if open_set.iter().filter(|c| c.p == neighbour.to).count() == 0 {
+                            open_set.push(Cost {
+                                p: neighbour.to.clone(),
+                                cost: neighbour_f_score.clone(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+    let cost = g_score.get(&end).map(|c| c.clone());
+    cost
+}
 
 #[derive(Debug)]
 struct Hill {
-    hill: Vec<Vec<u8>>,
-    start: (usize, usize),
-    end: (usize, usize),
+    hill: Grid<u8>,
+    reachable: Graph<XY>,
+    start: XY,
+    end: XY,
 }
-
-/*
-impl TryFrom<&str> for ____ {
-    type Error = std::io::Error;
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        Err(Error::new(InvalidData, "Error")),
-    }
-}
-
-impl Display for ____ {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f,"{}",____)
-    }
-}
-*/
 
 fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
-    let mut start = (0, 0);
-    let mut end = (0, 0);
-    let mut hill = BufReader::new(input)
-        .lines()
-        .enumerate()
-        .map(|(y, l)| {
-            l?.chars()
-                .enumerate()
-                .map(|(x, c)| match c {
-                    'a'..='z' => Ok((c as u8) - b'a'),
-                    'S' => {
-                        start = (x, y);
-                        Ok(0)
-                    }
-                    'E' => {
-                        end = (x, y);
-                        Ok(25)
-                    }
-                    _ => Err(Error::new(InvalidData, format!("({},{}) {}", x, y, c))),
-                })
-                .collect::<std::io::Result<Vec<_>>>()
-        })
-        .collect::<std::io::Result<Vec<_>>>()?;
-    dbg!(Ok(Hill { hill, start, end }))
+    let mut start: XY = XY::new(0, 0);
+    let mut end: XY = XY::new(0, 0);
+    let mut hill = Grid(
+        BufReader::new(input)
+            .lines()
+            .enumerate()
+            .map(|(y, l)| {
+                l?.chars()
+                    .enumerate()
+                    .map(|(x, c)| match c {
+                        'a'..='z' => Ok((c as u8) - b'a'),
+                        'S' => {
+                            start = XY::new(x as i32, y as i32);
+                            Ok(0)
+                        }
+                        'E' => {
+                            end = XY::new(x as i32, y as i32);
+                            Ok(25)
+                        }
+                        _ => Err(Error::new(InvalidData, format!("({},{}) {}", x, y, c))),
+                    })
+                    .collect::<std::io::Result<Vec<_>>>()
+            })
+            .collect::<std::io::Result<Vec<_>>>()?,
+    );
+    let mut reachable: Graph<XY> = Graph::new();
+    for (h, p) in hill.iter() {
+        hill.adjacent(p)
+            .iter()
+            .filter(|(&h1, _)| h1 <= h + 1)
+            .for_each(|(_, p1)| {
+                reachable.add_edge(p, *p1, 1.0);
+            });
+    }
+
+    Ok(Hill {
+        hill,
+        reachable,
+        start,
+        end,
+    })
 }
 
 fn part1(input: &In) -> Out {
-    PART1_RESULT
+    astar(&input.reachable, input.start, input.end, |p| 1.0).unwrap()
 }
 
 fn part2(input: &In) -> Out {
