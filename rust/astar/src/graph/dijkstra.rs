@@ -43,10 +43,8 @@ where
             }
         }
     }
-    println!("Dist: {:?}", dist);
-    println!("Prev: {:?}", prev);
     if prev.contains_key(&target) {
-        let mut path: Vec<T> = Vec::new();
+        let mut path: Vec<T> = vec![target.clone()];
         let mut u = target.clone();
         while let Some(v) = prev.get(&u).unwrap() {
             path.push(v.clone());
