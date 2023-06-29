@@ -88,10 +88,9 @@ fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
 }
 
 fn part1(input: &In) -> Out {
-    let cost = shortest_path(&input.reachable, input.start, input.end)
+    shortest_path(&input.reachable, input.start, input.end)
         .unwrap()
-        .0;
-    cost
+        .0
 }
 
 fn part2(input: &In) -> Out {
