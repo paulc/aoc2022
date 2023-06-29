@@ -5,3 +5,10 @@ version = 3
 [[package]]
 name = "day12"
 version = "0.1.0"
+dependencies = [
+ "graph",
+]
+
+[[package]]
+name = "graph"
+version = "0.1.0"

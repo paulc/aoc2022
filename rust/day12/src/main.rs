@@ -10,6 +10,9 @@ use std::io::BufReader;
 use std::io::Error;
 use std::io::ErrorKind::InvalidData;
 
+use graph::dijkstra::shortest_path;
+use graph::Graph;
+
 type In = Hill;
 type Out = f64;
 const PART1_RESULT: Out = 31.0;
@@ -91,56 +94,7 @@ impl<T: std::fmt::Display> std::fmt::Display for Grid<T> {
         Ok(())
     }
 }
-// =========== Edge ===========
-
-#[derive(Debug)]
-struct Edge<T> {
-    to: T,
-    cost: f64,
-}
-
-impl<T: std::fmt::Display> std::fmt::Display for Edge<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{:.1}", self.to, self.cost)
-    }
-}
-
-// =========== Graph ===========
-
-#[derive(Debug)]
-struct Graph<T>(HashMap<T, Vec<Edge<T>>>);
-
-impl<T: Eq + Hash> Graph<T> {
-    fn new() -> Self {
-        Self(HashMap::new())
-    }
-    fn add_edge(&mut self, from: T, to: T, cost: f64) {
-        self.0
-            .entry(from)
-            .or_insert(Vec::new())
-            .push(Edge { to, cost });
-    }
-}
-
-impl<T: Ord + std::fmt::Display> std::fmt::Display for Graph<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut keys = self.0.iter().collect::<Vec<_>>();
-        keys.sort_by_key(|(k, _)| k.clone());
-        for (k, v) in keys {
-            writeln!(
-                f,
-                "{} -> {}",
-                k,
-                v.iter()
-                    .map(|e| e.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )?;
-        }
-        Ok(())
-    }
-}
-
+/*
 // =========== Cost ===========
 
 #[derive(Debug, Copy, Clone)]
@@ -223,6 +177,7 @@ fn astar<T: Ord + Clone + Eq + Hash + std::fmt::Debug>(
     let cost = g_score.get(&end).map(|c| c.clone());
     cost
 }
+*/
 
 #[derive(Debug)]
 struct Hill {
@@ -277,7 +232,8 @@ fn parse_input(input: &mut impl Read) -> std::io::Result<In> {
 }
 
 fn part1(input: &In) -> Out {
-    astar(&input.reachable, input.start, input.end, |p| 1.0).unwrap()
+    let (cost, path) = shortest_path(&input.reachable, input.start, input.end).unwrap();
+    cost
 }
 
 fn part2(input: &In) -> Out {
