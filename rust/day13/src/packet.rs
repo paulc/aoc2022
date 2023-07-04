@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 #[derive(Debug)]
-pub struct PacketBuf<T>(Vec<Packet<T>>);
+pub struct PacketBuf<T>(pub Vec<Packet<T>>);
 
 impl<T> PacketBuf<T> {
     pub fn new() -> Self {
@@ -20,6 +20,42 @@ impl<T> PacketBuf<T> {
                 Ok(())
             }
             Packet::Value(_) => Err("Cant push to Packet::Value"),
+        }
+    }
+    pub fn iter(&self, root: PacketRef) -> impl Iterator<Item = (PacketRef, &Packet<T>)> {
+        match self.0.get(root.0) {
+            Some(Packet::List(l, _)) => l.iter().map(|p| (*p, self.0.get(p.0).unwrap())),
+            _ => panic!("Invalid root ref"),
+        }
+    }
+    pub fn _iter(&self, root: PacketRef) -> PacketIter<T> {
+        PacketIter {
+            buf: self,
+            current: root,
+            i: 0,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct PacketIter<'a, T> {
+    buf: &'a PacketBuf<T>,
+    current: PacketRef,
+    i: usize,
+}
+
+impl<'a, T> Iterator for PacketIter<'a, T> {
+    type Item = (PacketRef, &'a Packet<T>);
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(Packet::List(l, _)) = self.buf.0.get(self.current.0) {
+            if let Some(next) = l.get(self.i) {
+                self.i += 1;
+                Some((*next, self.buf.0.get(next.0).unwrap()))
+            } else {
+                None
+            }
+        } else {
+            None
         }
     }
 }
@@ -72,7 +108,7 @@ impl TryFrom<&str> for PacketBuf<i32> {
 }
 
 impl<T: Display> PacketBuf<T> {
-    fn fmt_packet(&self, root: PacketRef) -> String {
+    pub fn fmt_packet(&self, root: PacketRef) -> String {
         if let Some(root) = self.0.get(root.0) {
             match root {
                 Packet::List(l, _) => {
@@ -97,12 +133,23 @@ impl<T: Display> Display for PacketBuf<T> {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct PacketRef(usize);
+pub struct PacketRef(pub usize);
 
 #[derive(Debug)]
 pub enum Packet<T> {
     List(Vec<PacketRef>, Option<PacketRef>),
     Value(T),
+}
+
+impl<T: Display> Display for Packet<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Packet::List(l, _) => {
+                write!(f, "[..{}]", l.len())
+            }
+            Packet::Value(v) => write!(f, "{}", v),
+        }
+    }
 }
 
 impl<T> Packet<T> {
@@ -144,10 +191,25 @@ mod tests {
     }
     #[test]
     fn test_from() {
-        println!(
-            "{}",
-            PacketBuf::try_from("[1,2,3,[99,100],[[[10]]]]").unwrap()
+        for p in ["[1,2,3,[99,100],[[[10]]]]", "[1,1,3,1,1]", "[[1],[2,3,4]]"] {
+            assert_eq!(PacketBuf::try_from(p).unwrap().to_string(), p);
+        }
+    }
+
+    #[test]
+    fn test_iter() {
+        let buf = PacketBuf::try_from("[1,2,3,[99,100],[[[10]]]]").unwrap();
+        assert_eq!(
+            buf.iter(PacketRef(0)).map(|(i, _)| i.0).collect::<Vec<_>>(),
+            vec![1, 2, 3, 4, 7]
         );
-        println!("{}", PacketBuf::try_from("[[[]]]").unwrap());
+        assert_eq!(
+            buf.iter(PacketRef(4)).map(|(i, _)| i.0).collect::<Vec<_>>(),
+            vec![5, 6]
+        );
+        assert_eq!(
+            buf.iter(PacketRef(7)).map(|(i, _)| i.0).collect::<Vec<_>>(),
+            vec![8]
+        );
     }
 }
