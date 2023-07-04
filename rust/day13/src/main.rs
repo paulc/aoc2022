@@ -44,25 +44,28 @@ fn value_to_list<T>(v: T) -> (PacketBuf<T>, PacketRef) {
     (buf, root)
 }
 
-fn check_order(ba: &PacketBuf<i32>, bb: &PacketBuf<i32>, ia: PacketRef, ib: PacketRef) -> Ordering {
-    // println!("Compare: {} - {}", ba.fmt_packet(ia), bb.fmt_packet(ib));
-    let a = ba.0.get(ia.0).unwrap();
-    let b = bb.0.get(ib.0).unwrap();
+fn packet_cmp(
+    buf_a: &PacketBuf<i32>,
+    buf_b: &PacketBuf<i32>,
+    index_a: PacketRef,
+    index_b: PacketRef,
+) -> Ordering {
+    // println!("Compare: {} - {}", buf_a.fmt_packet(ia), buf_b.fmt_packet(ib));
+    let a = buf_a.0.get(index_a.0).unwrap();
+    let b = buf_b.0.get(index_b.0).unwrap();
     match (a, b) {
         (Packet::Value(a), Packet::Value(b)) => a.cmp(b),
         (Packet::List(a, _), Packet::List(b, _)) => {
             let mut order = Ordering::Equal;
-            let mut ia = a.iter();
-            let mut ib = b.iter();
+            let mut iter_a = a.iter();
+            let mut iter_b = b.iter();
             loop {
-                let a = ia.next();
-                let b = ib.next();
-                match (a, b) {
-                    (Some(_), None) => order = Ordering::Greater,
-                    (None, Some(_)) => order = Ordering::Less,
-                    (Some(a), Some(b)) => order = check_order(ba, bb, *a, *b),
+                order = match (iter_a.next(), iter_b.next()) {
+                    (Some(_), None) => Ordering::Greater,
+                    (None, Some(_)) => Ordering::Less,
+                    (Some(a), Some(b)) => packet_cmp(buf_a, buf_b, *a, *b),
                     (None, None) => break,
-                }
+                };
                 if order != Ordering::Equal {
                     break;
                 }
@@ -70,12 +73,12 @@ fn check_order(ba: &PacketBuf<i32>, bb: &PacketBuf<i32>, ia: PacketRef, ib: Pack
             order
         }
         (Packet::Value(a), b) => {
-            let (new_ba, new_a) = value_to_list(*a);
-            check_order(&new_ba, bb, new_a, ib)
+            let (buf, root) = value_to_list(*a);
+            packet_cmp(&buf, buf_b, root, index_b)
         }
         (a, Packet::Value(b)) => {
-            let (new_bb, new_b) = value_to_list(*b);
-            check_order(ba, &new_bb, ia, new_b)
+            let (buf, root) = value_to_list(*b);
+            packet_cmp(buf_a, &buf, index_a, root)
         }
     }
 }
@@ -83,7 +86,7 @@ fn check_order(ba: &PacketBuf<i32>, bb: &PacketBuf<i32>, ia: PacketRef, ib: Pack
 fn part1(input: &In) -> Out {
     let mut result: usize = 0;
     for (i, (a, b)) in input.iter().enumerate() {
-        if check_order(a, b, PacketRef(0), PacketRef(0)) == Ordering::Less {
+        if packet_cmp(a, b, PacketRef(0), PacketRef(0)) == Ordering::Less {
             result += (i + 1);
         }
     }
@@ -91,7 +94,18 @@ fn part1(input: &In) -> Out {
 }
 
 fn part2(input: &In) -> Out {
-    PART2_RESULT
+    let mut flat = input
+        .iter()
+        .flat_map(|(a, b)| vec![a, b])
+        .collect::<Vec<_>>();
+    let f1 = &PacketBuf::try_from("[[2]]").unwrap();
+    let f2 = &PacketBuf::try_from("[[6]]").unwrap();
+    flat.push(f1);
+    flat.push(f2);
+    flat.sort_by(|a, b| packet_cmp(a, b, PacketRef(0), PacketRef(0)));
+    let f1 = flat.iter().position(|&p| p.to_string() == "[[2]]").unwrap() + 1;
+    let f2 = flat.iter().position(|&p| p.to_string() == "[[6]]").unwrap() + 1;
+    f1 * f2
 }
 
 fn main() -> std::io::Result<()> {
