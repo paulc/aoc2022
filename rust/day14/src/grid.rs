@@ -1,4 +1,4 @@
-use crate::point::{Offset, Point};
+use crate::point::{Offset, Point, ADJACENT};
 use std::cmp::{max, min};
 use std::fmt::Display;
 
@@ -53,6 +53,17 @@ impl<T: Default> Grid<T> {
         } else {
             Err(())
         }
+    }
+    fn adjacent(&self, p: Point) -> Vec<Point> {
+        self.offset(p, ADJACENT)
+    }
+    fn offset<O: AsRef<[Offset]>>(&self, p: Point, offset: O) -> Vec<Point> {
+        offset
+            .as_ref()
+            .iter()
+            .map(|&o| p + o)
+            .filter(|&p| self.check_bounds(p))
+            .collect()
     }
 }
 
@@ -151,17 +162,15 @@ mod tests {
     fn test_grid_adjacent() {
         let mut g = fill_grid();
         assert_eq!(
-            Point::new(0, 0)
-                .adjacent()
-                .filter(|&p| g.check_bounds(p))
+            g.adjacent(Point::new(0, 0))
+                .into_iter()
                 .map(|p| g.get(p))
                 .collect::<Option<Vec<_>>>(),
             Some(vec![&V('H'), &V('N'), &V('R'), &V('L')])
         );
         assert_eq!(
-            Point::new(2, -2)
-                .adjacent()
-                .filter(|&p| g.check_bounds(p))
+            g.adjacent(Point::new(2, -2))
+                .into_iter()
                 .map(|p| g.get(p))
                 .collect::<Option<Vec<_>>>(),
             Some(vec![&V('J'), &V('D')])
@@ -187,6 +196,5 @@ mod tests {
             g.draw_line(Point::new(-2, 0), Point::new(5, 0), V('-')),
             Err(())
         );
-        println!("{}", g);
     }
 }
