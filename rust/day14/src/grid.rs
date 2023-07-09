@@ -57,8 +57,8 @@ impl<T: Default> Grid<T> {
     pub fn adjacent(&self, p: Point) -> Vec<Point> {
         self.offset(p, ADJACENT)
     }
-    pub fn offset<O: AsRef<[Offset]>>(&self, p: Point, offset: O) -> Vec<Point> {
-        offset
+    pub fn offset<O: AsRef<[Offset]>>(&self, p: Point, offsets: O) -> Vec<Point> {
+        offsets
             .as_ref()
             .iter()
             .map(|&o| p + o)
