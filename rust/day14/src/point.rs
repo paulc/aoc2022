@@ -1,7 +1,8 @@
+use std::cmp::Ordering;
 use std::fmt::Display;
 use std::ops::{Add, Sub};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct Point {
     pub x: i32,
     pub y: i32,
@@ -61,12 +62,12 @@ pub struct Offset {
     pub dy: i32,
 }
 
-const UP: Offset = Offset { dx: 0, dy: -1 };
-const DOWN: Offset = Offset { dx: 0, dy: 1 };
-const RIGHT: Offset = Offset { dx: 1, dy: 0 };
-const LEFT: Offset = Offset { dx: -1, dy: 0 };
+pub const UP: Offset = Offset { dx: 0, dy: -1 };
+pub const DOWN: Offset = Offset { dx: 0, dy: 1 };
+pub const RIGHT: Offset = Offset { dx: 1, dy: 0 };
+pub const LEFT: Offset = Offset { dx: -1, dy: 0 };
 
-const ADJACENT: [Offset; 4] = [UP, RIGHT, DOWN, LEFT];
+pub const ADJACENT: [Offset; 4] = [UP, RIGHT, DOWN, LEFT];
 
 impl Offset {
     pub fn new(dx: i32, dy: i32) -> Offset {

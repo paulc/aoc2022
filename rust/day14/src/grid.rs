@@ -1,8 +1,8 @@
-use crate::point::{Offset, Point};
+use crate::point::{Offset, Point, ADJACENT};
 use std::cmp::{max, min};
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Grid<T> {
     start: Point,
     end: Point,
@@ -11,7 +11,7 @@ pub struct Grid<T> {
 }
 
 impl<T: Default> Grid<T> {
-    fn new(start: Point, end: Point) -> Self {
+    pub fn new(start: Point, end: Point) -> Self {
         let size = (end - start) + Offset::new(1, 1);
         assert!(size.dx >= 0 && size.dy >= 0);
         let mut data = Vec::with_capacity((size.dx * size.dy) as usize);
@@ -25,10 +25,10 @@ impl<T: Default> Grid<T> {
             data,
         }
     }
-    fn check_bounds(&self, p: Point) -> bool {
+    pub fn check_bounds(&self, p: Point) -> bool {
         (p.x >= self.start.x) && (p.y >= self.start.y) && (p.x <= self.end.x) && (p.y <= self.end.y)
     }
-    fn get(&self, p: Point) -> Option<&T> {
+    pub fn get(&self, p: Point) -> Option<&T> {
         if self.check_bounds(p) {
             let offset = p - self.start;
             self.data
@@ -37,7 +37,7 @@ impl<T: Default> Grid<T> {
             None
         }
     }
-    fn get_mut(&mut self, p: Point) -> Option<&mut T> {
+    pub fn get_mut(&mut self, p: Point) -> Option<&mut T> {
         if self.check_bounds(p) {
             let offset = p - self.start;
             self.data
@@ -46,7 +46,7 @@ impl<T: Default> Grid<T> {
             None
         }
     }
-    fn set(&mut self, p: Point, new: T) -> Result<(), ()> {
+    pub fn set(&mut self, p: Point, new: T) -> Result<(), ()> {
         if let Some(old) = self.get_mut(p) {
             *old = new;
             Ok(())
@@ -54,10 +54,21 @@ impl<T: Default> Grid<T> {
             Err(())
         }
     }
+    pub fn adjacent(&self, p: Point) -> Vec<Point> {
+        self.offset(p, ADJACENT)
+    }
+    pub fn offset<O: AsRef<[Offset]>>(&self, p: Point, offset: O) -> Vec<Point> {
+        offset
+            .as_ref()
+            .iter()
+            .map(|&o| p + o)
+            .filter(|&p| self.check_bounds(p))
+            .collect()
+    }
 }
 
 impl<T: Clone + Default> Grid<T> {
-    fn draw_line(&mut self, p1: Point, p2: Point, v: T) -> Result<(), ()> {
+    pub fn draw_line(&mut self, p1: Point, p2: Point, v: T) -> Result<(), ()> {
         match (p1.x == p2.x, p1.y == p2.y) {
             (true, _) => Ok(for y in min(p1.y, p2.y)..=max(p1.y, p2.y) {
                 self.set(Point::new(p1.x, y), v.clone())?;
@@ -91,6 +102,7 @@ impl<T> From<Vec<Vec<T>>> for Grid<T> {
 
 impl<T: Display> Display for Grid<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // writeln!(f, "{}-{}", self.start, self.end)?;
         for y in 0..self.size.dy {
             for x in 0..self.size.dx {
                 write!(f, "{}", self.data[(x + y * self.size.dx) as usize])?
@@ -151,17 +163,15 @@ mod tests {
     fn test_grid_adjacent() {
         let mut g = fill_grid();
         assert_eq!(
-            Point::new(0, 0)
-                .adjacent()
-                .filter(|&p| g.check_bounds(p))
+            g.adjacent(Point::new(0, 0))
+                .into_iter()
                 .map(|p| g.get(p))
                 .collect::<Option<Vec<_>>>(),
             Some(vec![&V('H'), &V('N'), &V('R'), &V('L')])
         );
         assert_eq!(
-            Point::new(2, -2)
-                .adjacent()
-                .filter(|&p| g.check_bounds(p))
+            g.adjacent(Point::new(2, -2))
+                .into_iter()
                 .map(|p| g.get(p))
                 .collect::<Option<Vec<_>>>(),
             Some(vec![&V('J'), &V('D')])
@@ -187,6 +197,5 @@ mod tests {
             g.draw_line(Point::new(-2, 0), Point::new(5, 0), V('-')),
             Err(())
         );
-        println!("{}", g);
     }
 }
