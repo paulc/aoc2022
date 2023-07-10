@@ -2,6 +2,7 @@
 
 use point::Point;
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Display;
@@ -12,9 +13,9 @@ use std::io::Error;
 use std::io::ErrorKind::InvalidData;
 
 type In = Vec<Reading>;
-type Out = usize;
-const PART1_RESULT: Out = 0;
-const PART2_RESULT: Out = 0;
+type Out = i64;
+const PART1_RESULT: Out = 26;
+const PART2_RESULT: Out = 56000011;
 
 #[derive(Debug)]
 struct Reading {
@@ -51,22 +52,95 @@ fn project(r: &Reading, y_target: i32) -> Option<[i32; 2]> {
     }
 }
 
-fn part1(input: &In, y_target: i32) -> Out {
-    for r in input {
-        println!("{:?} -> {:?}", r, project(r, y_target));
+fn coalesce(r: &Vec<[i32; 2]>) -> Vec<[i32; 2]> {
+    let mut i = r.into_iter();
+    let mut out = Vec::new();
+    match i.next() {
+        None => out,
+        Some(start) => {
+            let mut current = start.clone();
+            while let Some(next) = i.next() {
+                match (
+                    current[0].cmp(&next[0]),
+                    current[1].cmp(&next[0]),
+                    current[1].cmp(&next[1]),
+                ) {
+                    // c0---c1 n0---n1
+                    (Ordering::Less, Ordering::Less, _) => {
+                        out.push(current);
+                        current = next.clone();
+                    }
+                    // c0---c1
+                    //    n0---n1
+                    (
+                        Ordering::Less | Ordering::Equal,
+                        Ordering::Greater | Ordering::Equal,
+                        Ordering::Less | Ordering::Equal,
+                    ) => {
+                        current = [current[0], next[1]];
+                    }
+                    // c0--------c1
+                    //    n0---n1
+                    (Ordering::Less | Ordering::Equal, Ordering::Greater, Ordering::Greater) => {
+                        current = [current[0], current[1]];
+                    }
+                    _ => panic!("Shouldnt get here"),
+                }
+            }
+            out.push(current);
+            out
+        }
     }
-    PART1_RESULT
 }
 
-fn part2(input: &In) -> Out {
-    PART2_RESULT
+fn inside(cover: &Vec<[i32; 2]>, x: &i32) -> bool {
+    for [a, b] in cover {
+        if x >= a && x <= b {
+            return true;
+        }
+    }
+    false
+}
+
+fn part1(input: &In, y_target: i32) -> Out {
+    let mut beacons: HashSet<i32> = HashSet::new();
+    let mut cover = input
+        .iter()
+        .filter_map(|r| {
+            if r.beacon.y == y_target {
+                beacons.insert(r.beacon.x);
+            }
+            project(r, y_target)
+        })
+        .collect::<Vec<_>>();
+    cover.sort();
+    let cover = coalesce(&cover);
+    let n_beacons = beacons.iter().filter(|&x| inside(&cover, x)).count();
+    ((cover.iter().map(|&[a, b]| b - a + 1).sum::<i32>() as usize) - n_beacons) as i64
+}
+
+fn part2(input: &In, max_xy: i32) -> Out {
+    let mut result: i64 = 0;
+    for y in 0..=max_xy {
+        let mut cover = input
+            .iter()
+            .filter_map(|r| project(r, y))
+            .collect::<Vec<_>>();
+        cover.sort();
+        let cover = coalesce(&cover);
+        if cover.len() > 1 {
+            result = (cover[0][1] as i64 + 1) * 4000000 + y as i64;
+            break;
+        }
+    }
+    result
 }
 
 fn main() -> std::io::Result<()> {
     let mut f = File::open("input")?;
     let input = parse_input(&mut f)?;
     println!("Part1: {:?}", part1(&input, 2000000));
-    println!("Part2: {:?}", part2(&input));
+    println!("Part2: {:?}", part2(&input, 4000000));
     Ok(())
 }
 
@@ -79,7 +153,7 @@ fn test_part1() {
 #[test]
 fn test_part2() {
     let input = parse_input(&mut TESTDATA.trim_matches('\n').as_bytes()).unwrap();
-    assert_eq!(part2(&input), PART2_RESULT);
+    assert_eq!(part2(&input, 20), PART2_RESULT);
 }
 
 #[cfg(test)]
