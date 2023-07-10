@@ -100,10 +100,10 @@ fn drop_sand(cave: &mut Grid<Cave>) -> Option<()> {
                 _ => {}
             }
         }
-        if p == start {
-            return None;
-        }
         if !dropped {
+            if p == start {
+                return None;
+            }
             cave.set(p, Cave::Sand);
             return Some(());
         }
