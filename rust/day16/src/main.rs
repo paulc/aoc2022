@@ -10,6 +10,8 @@ use std::io::BufReader;
 use std::io::Error;
 use std::io::ErrorKind::InvalidData;
 
+mod graph;
+
 type In = Vec<()>;
 type Out = usize;
 const PART1_RESULT: Out = 1651;
