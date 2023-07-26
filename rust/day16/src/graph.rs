@@ -34,7 +34,7 @@ where
     I: Clone + Copy + Eq + PartialEq + Hash + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "id={}({})", self.to, self.cost)
+        write!(f, "[{}]({})", self.to, self.cost)
     }
 }
 
@@ -67,7 +67,7 @@ where
     T: Id<I>,
     I: Clone + Copy + Eq + PartialEq + Hash,
 {
-    v: HashMap<I, Vertex<T, I>>,
+    g: HashMap<I, Vertex<T, I>>,
 }
 
 impl<T, I> Graph<T, I>
@@ -76,19 +76,35 @@ where
     I: Clone + Copy + Eq + PartialEq + Hash,
 {
     fn new() -> Self {
-        Graph { v: HashMap::new() }
+        Graph { g: HashMap::new() }
     }
     fn get(&self, id: &I) -> Option<&Vertex<T, I>> {
-        self.v.get(id)
+        self.g.get(id)
     }
     fn get_mut(&mut self, id: &I) -> Option<&mut Vertex<T, I>> {
-        self.v.get_mut(id)
+        self.g.get_mut(id)
     }
     fn iter(&self) -> impl Iterator<Item = &Vertex<T, I>> {
-        self.v.iter().map(|(k, v)| v)
+        self.g.iter().map(|(k, v)| v)
     }
     fn add_vertex(&mut self, v: T, e: Vec<Edge<I>>) {
-        self.v.insert(v.id(), Vertex::new(v, e));
+        self.g.insert(v.id(), Vertex::new(v, e));
+    }
+    fn add_symmetric_edges(&mut self) -> Result<(), &'static str> {
+        let mut symmetric: HashMap<I, Vec<Edge<I>>> = HashMap::new();
+        for (i, v) in &self.g {
+            for e in &v.edges {
+                symmetric
+                    .entry(e.to)
+                    .or_insert(Vec::new())
+                    .push(Edge::new(*i, e.cost));
+            }
+        }
+        for (i, v) in symmetric.iter_mut() {
+            let mut rev = self.get_mut(&i).ok_or_else(|| "Reverse vertex not found")?;
+            rev.edges.append(v);
+        }
+        Ok(())
     }
 }
 
@@ -98,13 +114,12 @@ where
     I: Clone + Copy + Eq + PartialEq + Ord + PartialOrd + Hash + Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut keys = self.v.iter().map(|(k, v)| k).collect::<Vec<_>>();
-        keys.sort();
-        for k in keys {
-            let v = self.get(k).expect("vertex");
+        let mut g = self.g.iter().collect::<Vec<_>>();
+        g.sort_by_key(|(k, v)| k.clone());
+        for (_, v) in g {
             writeln!(
                 f,
-                "{} {}",
+                "{} -> {}",
                 v.node,
                 v.edges
                     .iter()
@@ -134,16 +149,21 @@ mod tests {
 
     impl Display for V {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "[id={}]", self.id)
+            write!(f, "[{}]", self.id)
         }
     }
 
     #[test]
     fn test_graph() {
         let mut g: Graph<V, i64> = Graph::new();
-        g.add_vertex(V { id: 1 }, vec![Edge::new(2, 1.0), Edge::new(3, 1.0)]);
+        g.add_vertex(
+            V { id: 1 },
+            vec![Edge::new(2, 1.0), Edge::new(3, 1.0), Edge::new(4, 1.0)],
+        );
         g.add_vertex(V { id: 2 }, vec![]);
         g.add_vertex(V { id: 3 }, vec![]);
         println!("{}", g);
+        g.add_symmetric_edges().expect("panic");
+        println!("\nSymmetric:\n{}", g);
     }
 }
