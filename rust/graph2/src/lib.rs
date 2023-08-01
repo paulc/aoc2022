@@ -4,7 +4,8 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::hash::Hash;
 
-#[derive(Debug, Clone)]
+// Empty struct which implements Display
+#[derive(Debug, Clone, PartialEq)]
 pub struct E(());
 
 impl Display for E {
@@ -13,8 +14,8 @@ impl Display for E {
     }
 }
 
-#[derive(Debug)]
-pub struct Vertex<I, D>(I, Option<D>, Vec<(I, f64)>)
+#[derive(Debug, PartialEq)]
+pub struct Vertex<I, D>(I, Option<D>, Vec<(I, i32)>)
 where
     I: Display + Clone + Eq + PartialEq + Ord + Hash,
     D: Display;
@@ -24,8 +25,11 @@ where
     I: Display + Clone + Eq + PartialEq + Ord + Hash,
     D: Display,
 {
-    pub fn new(id: I, data: Option<D>, edges: Vec<(I, f64)>) -> Self {
+    pub fn new(id: I, data: Option<D>, edges: Vec<(I, i32)>) -> Self {
         Self(id, data, edges)
+    }
+    pub fn add_edge(&mut self, to: I, cost: i32) {
+        self.2.push((to, cost))
     }
     pub fn key(&self) -> I {
         self.0.clone()
@@ -36,18 +40,15 @@ where
     pub fn data_mut(&mut self) -> Option<&mut D> {
         self.1.as_mut()
     }
-    pub fn edges(&mut self) -> impl Iterator<Item = (I, f64)> + '_ {
+    pub fn edges(&self) -> impl Iterator<Item = (I, i32)> + '_ {
         self.2.iter().cloned()
     }
-    pub fn edges_mut(&mut self) -> &mut Vec<(I, f64)> {
+    pub fn edges_mut(&mut self) -> &mut Vec<(I, i32)> {
         &mut self.2
-    }
-    pub fn add_edge(&mut self, to: I, cost: f64) {
-        self.2.push((to, cost))
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Graph<I, D>(BTreeMap<I, Vertex<I, D>>)
 where
     I: Display + Clone + Eq + PartialEq + Ord + Hash,
@@ -61,7 +62,7 @@ where
     pub fn new() -> Self {
         Self(BTreeMap::new())
     }
-    pub fn new_from_edges(edges: Vec<(I, I, f64)>) -> Self {
+    pub fn new_from_edges(edges: Vec<(I, I, i32)>) -> Self {
         let mut out = Self::new();
         for (v1, v2, cost) in edges {
             out.0
@@ -77,11 +78,27 @@ where
     pub fn add_vertex(&mut self, v: Vertex<I, D>) {
         self.0.entry(v.0.clone()).or_insert_with(|| v);
     }
-    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<I, D>> {
+    pub fn iter(&self) -> impl Iterator<Item = &Vertex<I, D>> {
         self.0.values()
     }
     pub fn get(&self, key: &I) -> Option<&Vertex<I, D>> {
         self.0.get(key)
+    }
+    pub fn get_mut(&mut self, key: &I) -> Option<&mut Vertex<I, D>> {
+        self.0.get_mut(key)
+    }
+}
+
+impl<I, D> Display for Graph<I, D>
+where
+    I: Display + Clone + Eq + PartialEq + Ord + Hash,
+    D: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for v in self.iter() {
+            writeln!(f, "{}", v)?;
+        }
+        Ok(())
     }
 }
 
@@ -109,5 +126,152 @@ where
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug, PartialEq)]
+    struct D(i32, i32);
+    impl Display for D {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "({},{})", self.0, self.1)
+        }
+    }
+
+    fn make_graph() -> Graph<&'static str, E> {
+        Graph::new_from_edges(vec![
+            ("DD", "EE", 1),
+            ("BB", "DD", 5),
+            ("AA", "BB", 1),
+            ("AA", "CC", 2),
+            ("CC", "DD", 1),
+        ])
+    }
+
+    #[test]
+    fn test_graph_new() {
+        let mut g: Graph<&'static str, E> = Graph::new();
+        g.add_vertex(Vertex::new("AA", None, vec![("BB", 1), ("CC", 2)]));
+        g.add_vertex(Vertex::new("BB", None, vec![("DD", 5)]));
+        g.add_vertex(Vertex::new("CC", None, vec![("DD", 1)]));
+        g.add_vertex(Vertex::new("DD", None, vec![("EE", 1)]));
+        g.add_vertex(Vertex::new("EE", None, vec![]));
+        assert_eq!(g, make_graph());
+    }
+
+    #[test]
+    fn test_graph_from_edges() {
+        let g = make_graph();
+        assert_eq!(
+            g.to_string(),
+            "\
+AA <> -> [BB](1),[CC](2)
+BB <> -> [DD](5)
+CC <> -> [DD](1)
+DD <> -> [EE](1)
+EE <> -> 
+"
+        );
+    }
+
+    #[test]
+    fn test_graph_get() {
+        let g = make_graph();
+        assert_eq!(
+            g.get(&"AA"),
+            Some(&Vertex::new("AA", None, vec![("BB", 1), ("CC", 2)]))
+        );
+        assert_eq!(g.get(&"ZZ"), None);
+    }
+
+    #[test]
+    fn test_graph_iter() {
+        let g = make_graph();
+        assert_eq!(
+            g.iter().map(|v| v.key()).collect::<Vec<_>>(),
+            vec!["AA", "BB", "CC", "DD", "EE"]
+        );
+    }
+
+    #[test]
+    fn test_graph_add_vertex() {
+        let mut g = make_graph();
+        assert_eq!(g.get(&"ZZ"), None);
+        g.add_vertex(Vertex::new("ZZ", None, vec![("AA", 99)]));
+        assert_eq!(
+            g.iter().map(|v| v.key()).collect::<Vec<_>>(),
+            vec!["AA", "BB", "CC", "DD", "EE", "ZZ"]
+        );
+        assert_eq!(
+            g.get(&"ZZ"),
+            Some(&Vertex::new("ZZ", None, vec![("AA", 99)]))
+        );
+    }
+
+    #[test]
+    fn test_graph_get_mut() {
+        let mut g = make_graph();
+        g.get_mut(&"AA").unwrap().add_edge("EE", 10);
+        assert_eq!(
+            g.get(&"AA"),
+            Some(&Vertex::new(
+                "AA",
+                None,
+                vec![("BB", 1), ("CC", 2), ("EE", 10)]
+            ))
+        );
+    }
+
+    #[test]
+    fn test_vertex_add_edge() {
+        let mut g = make_graph();
+        g.get_mut(&"AA").unwrap().add_edge("ZZ", 99);
+        assert_eq!(
+            g.get(&"AA").unwrap().edges().collect::<Vec<_>>(),
+            vec![("BB", 1), ("CC", 2), ("ZZ", 99)]
+        );
+    }
+
+    #[test]
+    fn test_vertex_key() {
+        let g = make_graph();
+        assert_eq!(g.get(&"AA").unwrap().key(), "AA");
+    }
+
+    #[test]
+    fn test_vertex_data() {
+        let mut g: Graph<&'static str, D> = Graph::new();
+        g.add_vertex(Vertex::new("AA", Some(D(0, 1)), vec![]));
+        assert_eq!(g.get(&"AA").unwrap().data(), Some(&D(0, 1)));
+    }
+
+    #[test]
+    fn test_vertex_data_mut() {
+        let mut g: Graph<&'static str, D> = Graph::new();
+        g.add_vertex(Vertex::new("AA", Some(D(0, 1)), vec![]));
+        g.get_mut(&"AA").unwrap().data_mut().unwrap().0 = 99;
+        assert_eq!(g.get(&"AA").unwrap().data(), Some(&D(99, 1)));
+    }
+
+    #[test]
+    fn test_vertex_edges() {
+        let g = make_graph();
+        assert_eq!(
+            g.get(&"AA").unwrap().edges().collect::<Vec<_>>(),
+            vec![("BB", 1), ("CC", 2)]
+        );
+    }
+
+    #[test]
+    fn test_vertex_edges_mut() {
+        let mut g = make_graph();
+        g.get_mut(&"AA").unwrap().edges_mut().push(("ZZ", 99));
+        assert_eq!(
+            g.get(&"AA").unwrap().edges().collect::<Vec<_>>(),
+            vec![("BB", 1), ("CC", 2), ("ZZ", 99)]
+        );
     }
 }
