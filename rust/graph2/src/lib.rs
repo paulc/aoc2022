@@ -226,6 +226,14 @@ EE <> ->
     }
 
     #[test]
+    fn test_graph_get_mut2() {
+        let mut g: Graph<&'static str, i32> = Graph::new();
+        g.add_vertex(Vertex::new("AA", Some(0), vec![]));
+        g.get_mut(&"AA").unwrap().1 = Some(99);
+        assert_eq!(g.get(&"AA").unwrap().data(), Some(&99));
+    }
+
+    #[test]
     fn test_vertex_add_edge() {
         let mut g = make_graph();
         g.get_mut(&"AA").unwrap().add_edge("ZZ", 99);
