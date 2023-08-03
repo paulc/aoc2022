@@ -1,29 +1,18 @@
-use std::cmp::Ord;
-use std::collections::BTreeMap;
+pub mod astar;
+
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::hash::Hash;
 
-// Empty struct which implements Display
-#[derive(Debug, Clone, PartialEq)]
-pub struct E(());
-
-impl Display for E {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Ok(())
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub struct Vertex<I, D>(I, Option<D>, Vec<(I, i32)>)
 where
-    I: Display + Clone + Eq + PartialEq + Ord + Hash,
-    D: Display;
+    I: Clone + Eq + Hash;
 
 impl<I, D> Vertex<I, D>
 where
-    I: Display + Clone + Eq + PartialEq + Ord + Hash,
-    D: Display,
+    I: Clone + Eq + Hash,
 {
     pub fn new(id: I, data: Option<D>, edges: Vec<(I, i32)>) -> Self {
         Self(id, data, edges)
@@ -48,63 +37,9 @@ where
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Graph<I, D>(BTreeMap<I, Vertex<I, D>>)
-where
-    I: Display + Clone + Eq + PartialEq + Ord + Hash,
-    D: Display;
-
-impl<I, D> Graph<I, D>
-where
-    I: Display + Clone + Eq + PartialEq + Ord + Hash,
-    D: Display,
-{
-    pub fn new() -> Self {
-        Self(BTreeMap::new())
-    }
-    pub fn new_from_edges(edges: Vec<(I, I, i32)>) -> Self {
-        let mut out = Self::new();
-        for (v1, v2, cost) in edges {
-            out.0
-                .entry(v2.clone())
-                .or_insert_with(|| Vertex::new(v2.clone(), None, vec![]));
-            out.0
-                .entry(v1.clone())
-                .or_insert_with(|| Vertex::new(v1.clone(), None, vec![]))
-                .add_edge(v2, cost);
-        }
-        out
-    }
-    pub fn add_vertex(&mut self, v: Vertex<I, D>) {
-        self.0.entry(v.0.clone()).or_insert_with(|| v);
-    }
-    pub fn iter(&self) -> impl Iterator<Item = &Vertex<I, D>> {
-        self.0.values()
-    }
-    pub fn get(&self, key: &I) -> Option<&Vertex<I, D>> {
-        self.0.get(key)
-    }
-    pub fn get_mut(&mut self, key: &I) -> Option<&mut Vertex<I, D>> {
-        self.0.get_mut(key)
-    }
-}
-
-impl<I, D> Display for Graph<I, D>
-where
-    I: Display + Clone + Eq + PartialEq + Ord + Hash,
-    D: Display,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for v in self.iter() {
-            writeln!(f, "{}", v)?;
-        }
-        Ok(())
-    }
-}
-
 impl<I, D> Display for Vertex<I, D>
 where
-    I: Display + Clone + Eq + PartialEq + Ord + Hash,
+    I: Display + Clone + Eq + Hash,
     D: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -129,9 +64,70 @@ where
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Graph<I, D>(HashMap<I, Vertex<I, D>>)
+where
+    I: Clone + Eq + Hash;
+
+impl<I, D> Graph<I, D>
+where
+    I: Clone + Eq + Hash,
+{
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+    pub fn new_from_edges(edges: Vec<(I, I, i32)>) -> Self {
+        let mut out = Self::new();
+        for (v1, v2, cost) in edges {
+            out.0
+                .entry(v2.clone())
+                .or_insert_with(|| Vertex::new(v2.clone(), None, vec![]));
+            out.0
+                .entry(v1.clone())
+                .or_insert_with(|| Vertex::new(v1.clone(), None, vec![]))
+                .add_edge(v2, cost);
+        }
+        out
+    }
+    pub fn add_vertex(&mut self, v: Vertex<I, D>) {
+        self.0.entry(v.0.clone()).or_insert_with(|| v);
+    }
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<I, D>> {
+        self.0.values()
+    }
+    pub fn get(&self, key: &I) -> Option<&Vertex<I, D>> {
+        self.0.get(key)
+    }
+    pub fn get_mut(&mut self, key: &I) -> Option<&mut Vertex<I, D>> {
+        self.0.get_mut(key)
+    }
+}
+
+impl<I, D> Display for Graph<I, D>
+where
+    I: Display + Clone + Eq + Hash,
+    D: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for v in self.vertices() {
+            writeln!(f, "{}", v)?;
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[derive(Debug, Clone, PartialEq)]
+    struct E(());
+
+    impl Display for E {
+        fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            Ok(())
+        }
+    }
 
     #[derive(Debug, PartialEq)]
     struct D(i32, i32);
@@ -165,15 +161,20 @@ mod tests {
     #[test]
     fn test_graph_from_edges() {
         let g = make_graph();
+        let s = g.to_string();
         assert_eq!(
-            g.to_string(),
-            "\
-AA <> -> [BB](1),[CC](2)
-BB <> -> [DD](5)
-CC <> -> [DD](1)
-DD <> -> [EE](1)
-EE <> -> 
-"
+            {
+                let mut l = s.lines().collect::<Vec<_>>();
+                l.sort();
+                l
+            },
+            vec![
+                "AA <> -> [BB](1),[CC](2)",
+                "BB <> -> [DD](5)",
+                "CC <> -> [DD](1)",
+                "DD <> -> [EE](1)",
+                "EE <> -> "
+            ]
         );
     }
 
@@ -188,10 +189,14 @@ EE <> ->
     }
 
     #[test]
-    fn test_graph_iter() {
+    fn test_graph_vertices() {
         let g = make_graph();
         assert_eq!(
-            g.iter().map(|v| v.key()).collect::<Vec<_>>(),
+            {
+                let mut v = g.vertices().map(|v| v.key()).collect::<Vec<_>>();
+                v.sort();
+                v
+            },
             vec!["AA", "BB", "CC", "DD", "EE"]
         );
     }
@@ -202,7 +207,11 @@ EE <> ->
         assert_eq!(g.get(&"ZZ"), None);
         g.add_vertex(Vertex::new("ZZ", None, vec![("AA", 99)]));
         assert_eq!(
-            g.iter().map(|v| v.key()).collect::<Vec<_>>(),
+            {
+                let mut v = g.vertices().map(|v| v.key()).collect::<Vec<_>>();
+                v.sort();
+                v
+            },
             vec!["AA", "BB", "CC", "DD", "EE", "ZZ"]
         );
         assert_eq!(
