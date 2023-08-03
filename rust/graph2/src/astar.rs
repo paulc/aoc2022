@@ -33,12 +33,12 @@ where
 {
     let mut open: BinaryHeap<V<I>> = BinaryHeap::new();
     let mut from: HashMap<I, I> = HashMap::new();
-    let mut g_score: HashMap<I, i32> = HashMap::new();
+    let mut score: HashMap<I, i32> = HashMap::new();
     open.push(V(start.clone(), h(&start)));
-    g_score.insert(start.clone(), 0);
+    score.insert(start.clone(), 0);
     while let Some(current) = open.pop() {
         if current.0 == target {
-            if let Some(cost) = g_score.get(&target) {
+            if let Some(cost) = score.get(&target) {
                 let mut current = current.0;
                 let mut path = vec![current.clone()];
                 while let Some(prev) = from.get(&current) {
@@ -52,10 +52,10 @@ where
             }
         }
         for (n, d) in graph.get(&current.0).unwrap().edges() {
-            let tentative = g_score[&current.0] + d;
-            if tentative < *g_score.get(&n).unwrap_or(&i32::MAX) {
+            let tentative = score[&current.0] + d;
+            if tentative < *score.get(&n).unwrap_or(&i32::MAX) {
                 from.insert(n.clone(), current.0.clone());
-                g_score.insert(n.clone(), tentative);
+                score.insert(n.clone(), tentative);
                 open.push(V(n.clone(), tentative + h(&n)));
             }
         }
