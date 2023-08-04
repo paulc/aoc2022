@@ -1,4 +1,5 @@
 pub mod astar;
+pub mod dfs;
 
 use std::collections::HashMap;
 use std::fmt::Debug;

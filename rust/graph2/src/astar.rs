@@ -1,6 +1,6 @@
 use crate::Graph;
 
-use std::cmp::{Ordering, Reverse};
+use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 use std::hash::Hash;
 
@@ -14,7 +14,11 @@ where
     I: Eq,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Reverse(self.1).partial_cmp(&Reverse(other.1))
+        self.1.partial_cmp(&other.1).map(|o| match o {
+            Ordering::Less => Ordering::Greater,
+            Ordering::Equal => Ordering::Equal,
+            Ordering::Greater => Ordering::Less,
+        })
     }
 }
 impl<I> Ord for V<I>
@@ -22,50 +26,57 @@ where
     I: Eq,
 {
     fn cmp(&self, other: &Self) -> Ordering {
-        Reverse(self.1).cmp(&Reverse(other.1))
+        match self.1.cmp(&other.1) {
+            Ordering::Less => Ordering::Greater,
+            Ordering::Equal => Ordering::Equal,
+            Ordering::Greater => Ordering::Less,
+        }
     }
 }
 
-pub fn astar<I, D, F>(graph: &Graph<I, D>, start: I, target: I, h: F) -> Option<(i32, Vec<I>)>
+impl<I, D> Graph<I, D>
 where
-    I: Clone + Eq + Hash + std::fmt::Debug,
-    F: Fn(&I) -> i32,
+    I: Clone + Eq + Hash,
 {
-    let mut open: BinaryHeap<V<I>> = BinaryHeap::new();
-    let mut from: HashMap<I, I> = HashMap::new();
-    let mut score: HashMap<I, i32> = HashMap::new();
-    open.push(V(start.clone(), h(&start)));
-    score.insert(start.clone(), 0);
-    while let Some(current) = open.pop() {
-        if current.0 == target {
-            if let Some(cost) = score.get(&target) {
-                let mut current = current.0;
-                let mut path = vec![current.clone()];
-                while let Some(prev) = from.get(&current) {
-                    path.push(prev.clone());
-                    current = prev.clone();
+    pub fn astar<F>(&self, start: I, target: I, h: F) -> Option<(i32, Vec<I>)>
+    where
+        F: Fn(&I) -> i32,
+    {
+        let mut open: BinaryHeap<V<I>> = BinaryHeap::new();
+        let mut from: HashMap<I, I> = HashMap::new();
+        let mut score: HashMap<I, i32> = HashMap::new();
+        open.push(V(start.clone(), h(&start)));
+        score.insert(start.clone(), 0);
+        while let Some(current) = open.pop() {
+            if current.0 == target {
+                if let Some(cost) = score.get(&target) {
+                    let mut current = current.0;
+                    let mut path = vec![current.clone()];
+                    while let Some(prev) = from.get(&current) {
+                        path.push(prev.clone());
+                        current = prev.clone();
+                    }
+                    path.reverse();
+                    return Some((*cost, path));
+                } else {
+                    return None;
                 }
-                path.reverse();
-                return Some((*cost, path));
-            } else {
-                return None;
+            }
+            for (n, d) in self.get(&current.0).unwrap().edges() {
+                let tentative = score[&current.0] + d;
+                if tentative < *score.get(&n).unwrap_or(&i32::MAX) {
+                    from.insert(n.clone(), current.0.clone());
+                    score.insert(n.clone(), tentative);
+                    open.push(V(n.clone(), tentative + h(&n)));
+                }
             }
         }
-        for (n, d) in graph.get(&current.0).unwrap().edges() {
-            let tentative = score[&current.0] + d;
-            if tentative < *score.get(&n).unwrap_or(&i32::MAX) {
-                from.insert(n.clone(), current.0.clone());
-                score.insert(n.clone(), tentative);
-                open.push(V(n.clone(), tentative + h(&n)));
-            }
-        }
+        None
     }
-    None
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::*;
     use std::cmp::{max, min};
     use std::fs;
@@ -83,7 +94,7 @@ mod tests {
             ("E", "F", 1),
         ]);
         assert_eq!(
-            astar(&g, "A", "F", |_| 1),
+            g.astar("A", "F", |_| 1),
             Some((6, vec!["A", "B", "E", "F"]))
         );
     }
@@ -130,15 +141,18 @@ mod tests {
     #[test]
     fn test_astar_grid() {
         let g = make_graph("testdata/grid.txt");
-        let (cost, path) = astar(&g, (0, 0), (9, 9), |&(x, y)| md((x, y), (9, 9)) as i32).unwrap();
+        let (cost, path) = g
+            .astar((0, 0), (9, 9), |&(x, y)| md((x, y), (9, 9)) as i32)
+            .unwrap();
         assert_eq!((cost, path.len()), (40, 19));
     }
 
     #[test]
     fn test_astar_grid_large() {
         let g = make_graph("testdata/grid_large.txt");
-        let (cost, _path) =
-            astar(&g, (0, 0), (99, 99), |&(x, y)| md((x, y), (99, 99)) as i32).unwrap();
+        let (cost, _path) = g
+            .astar((0, 0), (99, 99), |&(x, y)| md((x, y), (99, 99)) as i32)
+            .unwrap();
         assert_eq!(cost, 602);
     }
 }
