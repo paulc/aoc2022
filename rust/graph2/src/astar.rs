@@ -36,7 +36,7 @@ where
 
 impl<I, D> Graph<I, D>
 where
-    I: Clone + Eq + Hash,
+    I: Clone + Copy + Eq + Hash,
 {
     pub fn astar<F>(&self, start: I, target: I, h: F) -> Option<(i32, Vec<I>)>
     where
@@ -45,16 +45,16 @@ where
         let mut open: BinaryHeap<V<I>> = BinaryHeap::new();
         let mut from: HashMap<I, I> = HashMap::new();
         let mut score: HashMap<I, i32> = HashMap::new();
-        open.push(V(start.clone(), h(&start)));
-        score.insert(start.clone(), 0);
+        open.push(V(start, h(&start)));
+        score.insert(start, 0);
         while let Some(current) = open.pop() {
             if current.0 == target {
                 if let Some(cost) = score.get(&target) {
                     let mut current = current.0;
-                    let mut path = vec![current.clone()];
+                    let mut path = vec![current];
                     while let Some(prev) = from.get(&current) {
-                        path.push(prev.clone());
-                        current = prev.clone();
+                        path.push(*prev);
+                        current = *prev;
                     }
                     path.reverse();
                     return Some((*cost, path));
@@ -62,14 +62,17 @@ where
                     return None;
                 }
             }
-            for (n, d) in self.get(&current.0).unwrap().edges() {
-                let tentative = score[&current.0] + d;
-                if tentative < *score.get(&n).unwrap_or(&i32::MAX) {
-                    from.insert(n.clone(), current.0.clone());
-                    score.insert(n.clone(), tentative);
-                    open.push(V(n.clone(), tentative + h(&n)));
+            self.get(&current.0).and_then(|v| {
+                for (n, d) in &v.edges {
+                    let tentative = score[&current.0] + d;
+                    if tentative < *score.get(&n).unwrap_or(&i32::MAX) {
+                        from.insert(*n, current.0);
+                        score.insert(*n, tentative);
+                        open.push(V(*n, tentative + h(&n)));
+                    }
                 }
-            }
+                Some(())
+            });
         }
         None
     }

@@ -1,12 +1,11 @@
-use crate::{Graph, Vertex};
+use crate::Graph;
 
 use std::collections::HashSet;
-// use std::collections::VecDeque;
 use std::hash::Hash;
 
 pub struct DfsIter<'a, I, D>
 where
-    I: Clone + Eq + Hash,
+    I: Clone + Copy + Eq + Hash,
 {
     graph: &'a Graph<I, D>,
     discovered: HashSet<I>,
@@ -15,29 +14,26 @@ where
 
 impl<'a, I, D> Iterator for DfsIter<'a, I, D>
 where
-    I: Clone + Eq + Hash + std::fmt::Debug,
-    D: std::fmt::Debug,
+    I: Clone + Copy + Eq + Hash,
 {
-    type Item = &'a Vertex<I, D>;
+    type Item = I;
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(v) = self.stack.pop().and_then(|v| self.graph.get(&v)) {
-            println!("{:?}", v);
-            if !self.discovered.contains(&v.0) {
-                self.discovered.insert(v.0.clone());
-                for (e, _) in v.edges() {
-                    self.stack.push(e.clone());
+        while let Some(v) = self.stack.pop() {
+            if !self.discovered.contains(&v) {
+                self.discovered.insert(v);
+                for (e, _) in &self.graph.get(&v).unwrap().edges {
+                    self.stack.push(*e);
                 }
+                return Some(v);
             }
-            Some(v)
-        } else {
-            None
         }
+        None
     }
 }
 
 impl<I, D> Graph<I, D>
 where
-    I: Clone + Eq + Hash,
+    I: Clone + Copy + Eq + Hash,
 {
     pub fn dfs_iter(&self, root: I) -> DfsIter<I, D> {
         DfsIter {
@@ -52,9 +48,8 @@ where
 mod tests {
     use crate::*;
 
-    #[test]
-    fn test_astar_simple() {
-        let _g: Graph<&str, ()> = Graph::new_from_edges(vec![
+    fn make_graph<'a>() -> Graph<&'a str, &'a str> {
+        Graph::new_from_bidirectional_edges(vec![
             ("A", "B", 1),
             ("A", "C", 1),
             ("A", "E", 1),
@@ -62,6 +57,17 @@ mod tests {
             ("B", "F", 1),
             ("C", "G", 1),
             ("E", "F", 1),
-        ]);
+        ])
+    }
+
+    #[test]
+    fn test_dfs() {
+        let g = make_graph();
+        assert_eq!(
+            g.dfs_iter("A")
+                .map(|i| g.get(&i).and_then(|v| Some(v.key)))
+                .collect::<Option<Vec<_>>>(),
+            Some(vec!["A", "E", "F", "B", "D", "C", "G"])
+        );
     }
 }
