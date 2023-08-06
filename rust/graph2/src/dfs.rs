@@ -21,9 +21,18 @@ where
         while let Some(v) = self.stack.pop() {
             if !self.discovered.contains(&v) {
                 self.discovered.insert(v);
+                self.graph.get(&v).and_then(|v| {
+                    for (e, _) in &v.edges {
+                        self.stack.push(*e);
+                    }
+
+                    Some(())
+                });
+                /*
                 for (e, _) in &self.graph.get(&v).unwrap().edges {
                     self.stack.push(*e);
                 }
+                */
                 return Some(v);
             }
         }
