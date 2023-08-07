@@ -1,4 +1,5 @@
 use crate::Graph;
+use crate::Vertex;
 
 use std::collections::HashSet;
 use std::hash::Hash;
@@ -18,16 +19,16 @@ where
 {
     type Item = I;
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(v) = self.stack.pop() {
-            if !self.discovered.contains(&v) {
-                self.discovered.insert(v);
-                self.graph.get(&v).and_then(|v| {
+        while let Some(i) = self.stack.pop() {
+            if !self.discovered.contains(&i) {
+                self.discovered.insert(i);
+                self.graph.get(&i).and_then(|v| {
                     for (e, _) in &v.edges {
                         self.stack.push(*e);
                     }
                     Some(())
                 });
-                return Some(v);
+                return Some(i);
             }
         }
         None
@@ -44,6 +45,30 @@ where
             discovered: HashSet::new(),
             stack: vec![root],
         }
+    }
+
+    pub fn dfs<F>(&self, start: I, f: &mut F)
+    where
+        F: FnMut(&Vertex<I, D>),
+    {
+        let mut discovered: HashSet<I> = HashSet::new();
+        Self::dfs_r(&self, &mut discovered, start, f);
+    }
+
+    fn dfs_r<F>(graph: &Graph<I, D>, discovered: &mut HashSet<I>, i: I, f: &mut F)
+    where
+        F: FnMut(&Vertex<I, D>),
+    {
+        discovered.insert(i);
+        graph.get(&i).and_then(|v| {
+            f(v);
+            for (e, _) in &v.edges {
+                if !discovered.contains(e) {
+                    Self::dfs_r(graph, discovered, *e, f)
+                }
+            }
+            Some(())
+        });
     }
 }
 
@@ -65,6 +90,21 @@ mod tests {
 
     #[test]
     fn test_dfs() {
+        let g = make_graph();
+        let mut out: Vec<String> = vec![];
+        let mut f = |v: &Vertex<&str, &str>| out.push(v.key.to_string());
+        g.dfs("A", &mut f);
+        assert_eq!(
+            out,
+            vec!["A", "B", "D", "F", "E", "C", "G"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn test_dfs_iter() {
         let g = make_graph();
         assert_eq!(
             g.dfs_iter("A")
