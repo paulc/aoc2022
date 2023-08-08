@@ -62,7 +62,7 @@ where
                     return None;
                 }
             }
-            self.get(&current.0).and_then(|v| {
+            if let Some(v) = self.get(&current.0) {
                 for (n, d) in &v.edges {
                     let tentative = score[&current.0] + d;
                     if tentative < *score.get(&n).unwrap_or(&i32::MAX) {
@@ -71,8 +71,7 @@ where
                         open.push(V(n.clone(), tentative + h(&n)));
                     }
                 }
-                Some(())
-            });
+            }
         }
         None
     }

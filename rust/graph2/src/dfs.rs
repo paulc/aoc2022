@@ -17,18 +17,17 @@ impl<'a, I, D> Iterator for DfsIter<'a, I, D>
 where
     I: Clone + Eq + Hash,
 {
-    type Item = I;
+    type Item = &'a Vertex<I, D>;
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(i) = self.stack.pop() {
             if !self.discovered.contains(&i) {
                 self.discovered.insert(i.clone());
-                self.graph.get(&i).and_then(|v| {
+                if let Some(v) = self.graph.get(&i) {
                     for (e, _) in &v.edges {
                         self.stack.push(e.clone());
                     }
-                    Some(())
-                });
-                return Some(i);
+                };
+                return self.graph.get(&i);
             }
         }
         None
@@ -47,12 +46,12 @@ where
         }
     }
 
-    pub fn dfs<F>(&self, start: I, f: &mut F)
+    pub fn dfs<F>(&self, root: I, f: &mut F)
     where
         F: FnMut(&Vertex<I, D>),
     {
         let mut discovered: HashSet<I> = HashSet::new();
-        Self::dfs_r(&self, &mut discovered, start, f);
+        Self::dfs_r(&self, &mut discovered, root, f);
     }
 
     fn dfs_r<F>(graph: &Graph<I, D>, discovered: &mut HashSet<I>, i: I, f: &mut F)
@@ -60,15 +59,14 @@ where
         F: FnMut(&Vertex<I, D>),
     {
         discovered.insert(i.clone());
-        graph.get(&i).and_then(|v| {
+        if let Some(v) = graph.get(&i) {
             f(v);
             for (e, _) in &v.edges {
                 if !discovered.contains(e) {
                     Self::dfs_r(graph, discovered, e.clone(), f)
                 }
             }
-            Some(())
-        });
+        }
     }
 }
 
@@ -100,6 +98,15 @@ mod tests {
                 .iter()
                 .map(|s| s.to_string())
                 .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn test_dfs_iter() {
+        let g = make_graph();
+        assert_eq!(
+            g.dfs_iter("A").map(|v| v.key).collect::<Vec<_>>(),
+            vec!["A", "E", "F", "B", "D", "C", "G"]
         );
     }
 }

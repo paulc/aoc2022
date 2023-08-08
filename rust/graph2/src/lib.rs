@@ -1,4 +1,5 @@
 pub mod astar;
+pub mod bfs;
 pub mod dfs;
 
 use std::collections::HashMap;
@@ -181,10 +182,9 @@ mod tests {
             (String::from("BB"), String::from("DD"), 3),
             (String::from("CC"), String::from("DD"), 4),
         ]);
-        g.get_mut(&String::from("DD")).and_then(|v| {
+        if let Some(v) = g.get_mut(&String::from("DD")) {
             v.data = 99;
-            Some(())
-        });
+        };
         let s = g.to_string();
         assert_eq!(
             {
@@ -243,11 +243,10 @@ mod tests {
     #[test]
     fn test_graph_get_mut() {
         let mut g = make_graph();
-        g.get_mut(&"AA").and_then(|v| {
+        if let Some(v) = g.get_mut(&"AA") {
             v.add_edge("EE", 10);
             v.data = 99;
-            Some(())
-        });
+        };
         assert_eq!(
             g.get(&"AA"),
             Some(&Vertex::new(
@@ -262,23 +261,20 @@ mod tests {
     fn test_graph_get_mut2() {
         let mut g: Graph<&'static str, i32> = Graph::new();
         g.add_vertex(Vertex::new("AA", 0, vec![]));
-        g.get_mut(&"AA").and_then(|v| {
+        if let Some(v) = g.get_mut(&"AA") {
             v.data = 99;
-            Some(())
-        });
-        assert_eq!(g.get(&"AA").and_then(|v| Some(v.data)), Some(99));
+        };
+        assert_eq!(g.get(&"AA").map(|v| v.data), Some(99));
     }
 
     #[test]
     fn test_vertex_add_edge() {
         let mut g = make_graph();
-        g.get_mut(&"AA").and_then(|v| {
+        if let Some(v) = g.get_mut(&"AA") {
             v.add_edge("ZZ", 99);
-            Some(())
-        });
+        };
         assert_eq!(
-            g.get(&"AA")
-                .and_then(|v| Some(v.edges.iter().collect::<Vec<_>>())),
+            g.get(&"AA").map(|v| v.edges.iter().collect::<Vec<_>>()),
             Some(vec![&("BB", 1), &("CC", 2), &("ZZ", 99)])
         );
     }
@@ -286,33 +282,31 @@ mod tests {
     #[test]
     fn test_vertex_key() {
         let g = make_graph();
-        assert_eq!(g.get(&"AA").and_then(|v| Some(v.key)), Some("AA"));
+        assert_eq!(g.get(&"AA").map(|v| v.key), Some("AA"));
     }
 
     #[test]
     fn test_vertex_data() {
         let mut g: Graph<&'static str, D> = Graph::new();
         g.add_vertex(Vertex::new("AA", D(0, 1), vec![]));
-        assert_eq!(g.get(&"AA").and_then(|v| Some(&v.data)), Some(&D(0, 1)));
+        assert_eq!(g.get(&"AA").map(|v| &v.data), Some(&D(0, 1)));
     }
 
     #[test]
     fn test_vertex_data_mut() {
         let mut g: Graph<&'static str, D> = Graph::new();
         g.add_vertex(Vertex::new("AA", D(0, 1), vec![]));
-        g.get_mut(&"AA").and_then(|v| {
+        if let Some(v) = g.get_mut(&"AA") {
             v.data.0 = 99;
-            Some(())
-        });
-        assert_eq!(g.get(&"AA").and_then(|v| Some(&v.data)), Some(&D(99, 1)));
+        };
+        assert_eq!(g.get(&"AA").map(|v| &v.data), Some(&D(99, 1)));
     }
 
     #[test]
     fn test_vertex_edges() {
         let g = make_graph();
         assert_eq!(
-            g.get(&"AA")
-                .and_then(|v| Some(v.edges.iter().collect::<Vec<_>>())),
+            g.get(&"AA").map(|v| v.edges.iter().collect::<Vec<_>>()),
             Some(vec![&("BB", 1), &("CC", 2)])
         );
     }
@@ -320,13 +314,11 @@ mod tests {
     #[test]
     fn test_vertex_edges_mut() {
         let mut g = make_graph();
-        g.get_mut(&"AA").and_then(|v| {
+        if let Some(v) = g.get_mut(&"AA") {
             v.edges.push(("ZZ", 99));
-            Some(())
-        });
+        };
         assert_eq!(
-            g.get(&"AA")
-                .and_then(|v| Some(v.edges.iter().collect::<Vec<_>>())),
+            g.get(&"AA").map(|v| v.edges.iter().collect::<Vec<_>>()),
             Some(vec![&("BB", 1), &("CC", 2), &("ZZ", 99)])
         );
     }
