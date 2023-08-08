@@ -326,4 +326,13 @@ mod tests {
             Some(vec![&("BB", 1), &("CC", 2), &("ZZ", 99)])
         );
     }
+
+    #[test]
+    fn test_graph_refcell() {
+        use std::cell::RefCell;
+        let mut g: Graph<&str, RefCell<i32>> = Graph::new_from_edges(vec![("AA", "BB", 1)]);
+        assert_eq!(*g.get(&"AA").unwrap().data.borrow(), 0);
+        g.get_mut(&"AA").unwrap().data.replace(99);
+        assert_eq!(*g.get(&"AA").unwrap().data.borrow(), 99);
+    }
 }

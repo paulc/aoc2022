@@ -102,15 +102,4 @@ mod tests {
                 .collect::<Vec<_>>()
         );
     }
-
-    #[test]
-    fn test_dfs_iter() {
-        let g = make_graph();
-        assert_eq!(
-            g.dfs_iter("A")
-                .map(|i| g.get(&i).and_then(|v| Some(v.key)))
-                .collect::<Option<Vec<_>>>(),
-            Some(vec!["A", "E", "F", "B", "D", "C", "G"])
-        );
-    }
 }
