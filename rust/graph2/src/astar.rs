@@ -114,7 +114,7 @@ mod tests {
             for x in 0..a[0].len() {
                 g.add_vertex(Vertex::new(
                     (x, y),
-                    None,
+                    (),
                     adj(&a, (x, y))
                         .iter()
                         .map(|&(x, y)| ((x, y), a[y][x] as i32))
