@@ -175,9 +175,13 @@ mod tests {
 
     #[test]
     fn test_graph_from_edges_symmetric() {
-        let mut g: Graph<i32, i32> =
-            Graph::new_from_bidirectional_edges(vec![(0, 1, 1), (0, 2, 2), (1, 3, 3), (2, 3, 4)]);
-        g.get_mut(&3).and_then(|v| {
+        let mut g: Graph<String, i32> = Graph::new_from_bidirectional_edges(vec![
+            (String::from("AA"), String::from("BB"), 1),
+            (String::from("AA"), String::from("CC"), 2),
+            (String::from("BB"), String::from("DD"), 3),
+            (String::from("CC"), String::from("DD"), 4),
+        ]);
+        g.get_mut(&String::from("DD")).and_then(|v| {
             v.data = 99;
             Some(())
         });
@@ -189,10 +193,10 @@ mod tests {
                 l
             },
             vec![
-                "0 <0> -> [1](1),[2](2)",
-                "1 <0> -> [0](1),[3](3)",
-                "2 <0> -> [0](2),[3](4)",
-                "3 <99> -> [1](3),[2](4)",
+                "AA <0> -> [BB](1),[CC](2)",
+                "BB <0> -> [AA](1),[DD](3)",
+                "CC <0> -> [AA](2),[DD](4)",
+                "DD <99> -> [BB](3),[CC](4)",
             ]
         );
     }
