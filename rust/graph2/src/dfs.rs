@@ -6,7 +6,7 @@ use std::hash::Hash;
 
 pub struct DfsIter<'a, I, D>
 where
-    I: Clone + Copy + Eq + Hash,
+    I: Clone + Eq + Hash,
 {
     graph: &'a Graph<I, D>,
     discovered: HashSet<I>,
@@ -15,16 +15,16 @@ where
 
 impl<'a, I, D> Iterator for DfsIter<'a, I, D>
 where
-    I: Clone + Copy + Eq + Hash,
+    I: Clone + Eq + Hash,
 {
     type Item = I;
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(i) = self.stack.pop() {
             if !self.discovered.contains(&i) {
-                self.discovered.insert(i);
+                self.discovered.insert(i.clone());
                 self.graph.get(&i).and_then(|v| {
                     for (e, _) in &v.edges {
-                        self.stack.push(*e);
+                        self.stack.push(e.clone());
                     }
                     Some(())
                 });
@@ -37,7 +37,7 @@ where
 
 impl<I, D> Graph<I, D>
 where
-    I: Clone + Copy + Eq + Hash,
+    I: Clone + Eq + Hash,
 {
     pub fn dfs_iter(&self, root: I) -> DfsIter<I, D> {
         DfsIter {
@@ -59,12 +59,12 @@ where
     where
         F: FnMut(&Vertex<I, D>),
     {
-        discovered.insert(i);
+        discovered.insert(i.clone());
         graph.get(&i).and_then(|v| {
             f(v);
             for (e, _) in &v.edges {
                 if !discovered.contains(e) {
-                    Self::dfs_r(graph, discovered, *e, f)
+                    Self::dfs_r(graph, discovered, e.clone(), f)
                 }
             }
             Some(())

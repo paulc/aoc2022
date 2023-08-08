@@ -9,7 +9,7 @@ use std::hash::Hash;
 #[derive(Debug, PartialEq)]
 pub struct Vertex<I, D>
 where
-    I: Clone + Copy + Eq + Hash,
+    I: Clone + Eq + Hash,
 {
     key: I,
     data: D,
@@ -18,7 +18,7 @@ where
 
 impl<I, D> Vertex<I, D>
 where
-    I: Clone + Copy + Eq + Hash,
+    I: Clone + Eq + Hash,
 {
     pub fn new(key: I, data: D, edges: Vec<(I, i32)>) -> Self {
         Self { key, data, edges }
@@ -30,7 +30,7 @@ where
 
 impl<I, D> Display for Vertex<I, D>
 where
-    I: Display + Clone + Copy + Eq + Hash,
+    I: Display + Clone + Eq + Hash,
     D: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -50,17 +50,17 @@ where
 #[derive(Debug, PartialEq)]
 pub struct Graph<I, D>(HashMap<I, Vertex<I, D>>)
 where
-    I: Clone + Copy + Eq + Hash;
+    I: Clone + Eq + Hash;
 
 impl<I, D> Graph<I, D>
 where
-    I: Clone + Copy + Eq + Hash,
+    I: Clone + Eq + Hash,
 {
     pub fn new() -> Self {
         Self(HashMap::new())
     }
     pub fn add_vertex(&mut self, v: Vertex<I, D>) {
-        self.0.entry(v.key).or_insert_with(|| v);
+        self.0.entry(v.key.clone()).or_insert_with(|| v);
     }
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<I, D>> {
         self.0.values()
@@ -75,19 +75,19 @@ where
 
 impl<I, D> Graph<I, D>
 where
-    I: Clone + Copy + Eq + Hash,
+    I: Clone + Eq + Hash,
     D: Default,
 {
     pub fn new_from_edges(edges: Vec<(I, I, i32)>) -> Self {
         let mut out = Self::new();
         for (v1, v2, cost) in edges {
             out.0
-                .entry(v2)
-                .or_insert_with(|| Vertex::new(v2, Default::default(), vec![]));
+                .entry(v2.clone())
+                .or_insert_with(|| Vertex::new(v2.clone(), Default::default(), vec![]));
             out.0
-                .entry(v1)
-                .or_insert_with(|| Vertex::new(v1, Default::default(), vec![]))
-                .add_edge(v2, cost);
+                .entry(v1.clone())
+                .or_insert_with(|| Vertex::new(v1.clone(), Default::default(), vec![]))
+                .add_edge(v2.clone(), cost);
         }
         out
     }
@@ -95,13 +95,13 @@ where
         let mut out = Self::new();
         for (v1, v2, cost) in edges {
             out.0
-                .entry(v2)
-                .or_insert_with(|| Vertex::new(v2, Default::default(), vec![]))
-                .add_edge(v1, cost);
+                .entry(v2.clone())
+                .or_insert_with(|| Vertex::new(v2.clone(), Default::default(), vec![]))
+                .add_edge(v1.clone(), cost);
             out.0
-                .entry(v1)
-                .or_insert_with(|| Vertex::new(v1, Default::default(), vec![]))
-                .add_edge(v2, cost);
+                .entry(v1.clone())
+                .or_insert_with(|| Vertex::new(v1.clone(), Default::default(), vec![]))
+                .add_edge(v2.clone(), cost);
         }
         out
     }
@@ -109,7 +109,7 @@ where
 
 impl<I, D> Display for Graph<I, D>
 where
-    I: Display + Clone + Copy + Eq + Hash,
+    I: Display + Clone + Eq + Hash,
     D: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
