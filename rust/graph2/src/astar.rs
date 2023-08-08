@@ -50,14 +50,14 @@ where
         while let Some(current) = open.pop() {
             if current.0 == target {
                 if let Some(cost) = score.get(&target) {
-                    let mut current = current.0;
+                    let mut current = &current.0;
                     let mut path = vec![current.clone()];
-                    while let Some(prev) = from.get(&current) {
+                    while let Some(prev) = from.get(current) {
                         path.push(prev.clone());
-                        current = prev.clone();
+                        current = prev;
                     }
                     path.reverse();
-                    return Some((*cost, path));
+                    return Some((cost.clone(), path));
                 } else {
                     return None;
                 }
