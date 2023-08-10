@@ -12,9 +12,9 @@ pub struct Vertex<I, D>
 where
     I: Clone + Eq + Hash,
 {
-    key: I,
-    data: D,
-    edges: Vec<(I, i32)>,
+    pub key: I,
+    pub data: D,
+    pub edges: Vec<(I, i32)>,
 }
 
 impl<I, D> Vertex<I, D>
