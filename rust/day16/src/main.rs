@@ -1,6 +1,5 @@
 #![allow(unused)]
 
-use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Display;
@@ -9,6 +8,10 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::Error;
 use std::io::ErrorKind::InvalidData;
+use std::sync::atomic::AtomicI32;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::thread;
 
 use graph2::Graph;
 use graph2::Vertex;
@@ -114,7 +117,11 @@ struct State {
     time: i32,
 }
 
-fn search(s: State, valve: &HashMap<Key, i32>, cost: &HashMap<Key, HashMap<Key, i32>>) -> Vec<i32> {
+fn search<'a>(
+    s: State,
+    valve: Arc<HashMap<Key, i32>>,
+    cost: Arc<HashMap<Key, HashMap<Key, i32>>>,
+) -> Vec<i32> {
     if !s.remaining.is_empty() && s.time < 30 {
         let mut out: Vec<i32> = Vec::new();
         for n in s.remaining.iter() {
@@ -126,10 +133,11 @@ fn search(s: State, valve: &HashMap<Key, i32>, cost: &HashMap<Key, HashMap<Key, 
                 time: t_next,
             };
             next.remaining.remove(n);
-            out.extend(search(next, valve, cost));
+            out.extend(search(next, valve.clone(), cost.clone()));
         }
         out
     } else {
+        // println!("{:?}", s);
         vec![s.pressure]
     }
 }
@@ -147,7 +155,31 @@ fn part1(
         pressure: 0,
         time: 0,
     };
-    search(start, &valve, &cost).into_iter().max().unwrap()
+    let mut handle = Vec::new();
+    let valve = Arc::new(valve.clone());
+    let cost = Arc::new(cost.clone());
+    let result = Arc::new(AtomicI32::new(0));
+    for n in start.remaining.iter() {
+        let t_next = start.time + cost[&start.current][n] + 1;
+        let mut next = State {
+            current: n.clone(),
+            remaining: start.remaining.clone(),
+            pressure: start.pressure + (30 - t_next) * valve[n],
+            time: t_next,
+        };
+        next.remaining.remove(n);
+        let valve = valve.clone();
+        let cost = cost.clone();
+        let result = result.clone();
+        handle.push(thread::spawn(move || {
+            let max = search(next, valve, cost).into_iter().max().unwrap();
+            result.fetch_max(max, Ordering::Relaxed);
+        }));
+    }
+    for h in handle {
+        h.join().unwrap();
+    }
+    (*result).load(Ordering::Relaxed)
 }
 
 fn part2(input: &In) -> Out {
