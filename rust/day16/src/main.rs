@@ -119,10 +119,12 @@ struct State {
 
 fn search<'a>(
     s: State,
+    time: i32,
+    max: Arc<AtomicI32>,
     valve: Arc<HashMap<Key, i32>>,
     cost: Arc<HashMap<Key, HashMap<Key, i32>>>,
-) -> Vec<i32> {
-    if !s.remaining.is_empty() && s.time < 30 {
+) {
+    if !s.remaining.is_empty() && s.time < time {
         let mut out: Vec<i32> = Vec::new();
         for n in s.remaining.iter() {
             let t_next = s.time + cost[&s.current][n] + 1;
@@ -133,12 +135,13 @@ fn search<'a>(
                 time: t_next,
             };
             next.remaining.remove(n);
-            out.extend(search(next, valve.clone(), cost.clone()));
+            let valve = Arc::clone(&valve);
+            let cost = Arc::clone(&cost);
+            let max = Arc::clone(&max);
+            search(next, time, max, valve, cost);
         }
-        out
     } else {
-        // println!("{:?}", s);
-        vec![s.pressure]
+        max.fetch_max(s.pressure, Ordering::Relaxed);
     }
 }
 
@@ -158,7 +161,7 @@ fn part1(
     let mut handle = Vec::new();
     let valve = Arc::new(valve.clone());
     let cost = Arc::new(cost.clone());
-    let result = Arc::new(AtomicI32::new(0));
+    let max = Arc::new(AtomicI32::new(0));
     for n in start.remaining.iter() {
         let t_next = start.time + cost[&start.current][n] + 1;
         let mut next = State {
@@ -168,18 +171,17 @@ fn part1(
             time: t_next,
         };
         next.remaining.remove(n);
-        let valve = valve.clone();
-        let cost = cost.clone();
-        let result = result.clone();
+        let valve = Arc::clone(&valve);
+        let cost = Arc::clone(&cost);
+        let max = Arc::clone(&max);
         handle.push(thread::spawn(move || {
-            let max = search(next, valve, cost).into_iter().max().unwrap();
-            result.fetch_max(max, Ordering::Relaxed);
+            search(next, 30, max, valve, cost);
         }));
     }
     for h in handle {
         h.join().unwrap();
     }
-    (*result).load(Ordering::Relaxed)
+    (*max).load(Ordering::Relaxed)
 }
 
 fn part2(input: &In) -> Out {
