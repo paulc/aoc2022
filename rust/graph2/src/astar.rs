@@ -38,7 +38,7 @@ impl<I, D> Graph<I, D>
 where
     I: Clone + Eq + Hash,
 {
-    pub fn astar<F>(&self, start: I, target: I, h: F) -> Option<(i32, Vec<I>)>
+    pub fn astar<F>(&self, start: &I, target: &I, h: F) -> Option<(i32, Vec<I>)>
     where
         F: Fn(&I) -> i32,
     {
@@ -46,9 +46,9 @@ where
         let mut from: HashMap<I, I> = HashMap::new();
         let mut score: HashMap<I, i32> = HashMap::new();
         open.push(V(start.clone(), h(&start)));
-        score.insert(start, 0);
+        score.insert(start.clone(), 0);
         while let Some(current) = open.pop() {
-            if current.0 == target {
+            if current.0 == *target {
                 if let Some(cost) = score.get(&target) {
                     let mut current = &current.0;
                     let mut path = vec![current.clone()];
@@ -96,7 +96,7 @@ mod tests {
             ("E", "F", 1),
         ]);
         assert_eq!(
-            g.astar("A", "F", |_| 1),
+            g.astar(&"A", &"F", |_| 1),
             Some((6, vec!["A", "B", "E", "F"]))
         );
     }
@@ -144,7 +144,7 @@ mod tests {
     fn test_astar_grid() {
         let g = make_graph("testdata/grid.txt");
         let (cost, path) = g
-            .astar((0, 0), (9, 9), |&(x, y)| md((x, y), (9, 9)) as i32)
+            .astar(&(0, 0), &(9, 9), |&(x, y)| md((x, y), (9, 9)) as i32)
             .unwrap();
         assert_eq!((cost, path.len()), (40, 19));
     }
@@ -153,7 +153,7 @@ mod tests {
     fn test_astar_grid_large() {
         let g = make_graph("testdata/grid_large.txt");
         let (cost, _path) = g
-            .astar((0, 0), (99, 99), |&(x, y)| md((x, y), (99, 99)) as i32)
+            .astar(&(0, 0), &(99, 99), |&(x, y)| md((x, y), (99, 99)) as i32)
             .unwrap();
         assert_eq!(cost, 602);
     }

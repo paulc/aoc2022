@@ -128,7 +128,6 @@ func calculatePair(input cave, split []string) int {
 
 	search(input, start, e, visited_e, 26, &best_e)
 	search(input, start, p, visited_p, 26, &best_p)
-
 	return best_e + best_p
 }
 

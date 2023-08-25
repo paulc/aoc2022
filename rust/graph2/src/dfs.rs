@@ -38,15 +38,15 @@ impl<I, D> Graph<I, D>
 where
     I: Clone + Eq + Hash,
 {
-    pub fn dfs_iter(&self, root: I) -> DfsIter<I, D> {
+    pub fn dfs_iter(&self, root: &I) -> DfsIter<I, D> {
         DfsIter {
             graph: &self,
             discovered: HashSet::new(),
-            stack: vec![root],
+            stack: vec![root.clone()],
         }
     }
 
-    pub fn dfs<F>(&self, root: I, f: &mut F)
+    pub fn dfs<F>(&self, root: &I, f: &mut F)
     where
         F: FnMut(&Vertex<I, D>),
     {
@@ -54,7 +54,7 @@ where
         Self::dfs_r(&self, &mut discovered, root, f);
     }
 
-    fn dfs_r<F>(graph: &Graph<I, D>, discovered: &mut HashSet<I>, i: I, f: &mut F)
+    fn dfs_r<F>(graph: &Graph<I, D>, discovered: &mut HashSet<I>, i: &I, f: &mut F)
     where
         F: FnMut(&Vertex<I, D>),
     {
@@ -63,7 +63,7 @@ where
             f(v);
             for (e, _) in &v.edges {
                 if !discovered.contains(e) {
-                    Self::dfs_r(graph, discovered, e.clone(), f)
+                    Self::dfs_r(graph, discovered, e, f)
                 }
             }
         }
@@ -91,7 +91,7 @@ mod tests {
         let g = make_graph();
         let mut out: Vec<String> = vec![];
         let mut f = |v: &Vertex<&str, &str>| out.push(v.key.to_string());
-        g.dfs("A", &mut f);
+        g.dfs(&"A", &mut f);
         assert_eq!(
             out,
             vec!["A", "B", "D", "F", "E", "C", "G"]
@@ -105,7 +105,7 @@ mod tests {
     fn test_dfs_iter() {
         let g = make_graph();
         assert_eq!(
-            g.dfs_iter("A").map(|v| v.key).collect::<Vec<_>>(),
+            g.dfs_iter(&"A").map(|v| v.key).collect::<Vec<_>>(),
             vec!["A", "E", "F", "B", "D", "C", "G"]
         );
     }

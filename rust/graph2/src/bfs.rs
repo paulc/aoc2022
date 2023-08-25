@@ -10,7 +10,7 @@ impl<I, D> Graph<I, D>
 where
     I: Clone + Eq + Hash,
 {
-    pub fn bfs<F>(&self, root: I, f: &mut F) -> Option<Vec<I>>
+    pub fn bfs<F>(&self, root: &I, f: &mut F) -> Option<Vec<I>>
     where
         F: FnMut(&Vertex<I, D>) -> bool,
     {
@@ -62,7 +62,7 @@ mod tests {
     fn test_bfs() {
         let g = make_graph();
         let mut visited: Vec<&str> = Vec::new();
-        g.bfs("A", &mut |v: &Vertex<&str, &str>| {
+        g.bfs(&"A", &mut |v: &Vertex<&str, &str>| {
             visited.push(v.key.clone());
             false
         });
@@ -74,7 +74,7 @@ mod tests {
         let g = make_graph();
         let goal = "F";
         let mut visited: Vec<&str> = Vec::new();
-        let path = g.bfs("A", &mut |v: &Vertex<&str, &str>| {
+        let path = g.bfs(&"A", &mut |v: &Vertex<&str, &str>| {
             visited.push(v.key.clone());
             v.key == goal
         });
